@@ -14,36 +14,67 @@ suppressPackageStartupMessages({
 })
 ```
 
+
+# Qualitative description of population structure
+
+# Description of the demographic information
+
+# A life-cycle diagram for your species
+
+```{r}
+DiagrammeR::grViz("
+      digraph boxes_and_circles{
+
+# Define nodes
+node [shape = circle]
+
+egg; a1; a2; a3; a4; a5; a6; a7; a8; a9; a10; a11; a12; a13
+
+# Add edge statements
+#Advaance classes
+egg -> a1[label = m0]
+a1 -> a2[label = m1]
+a2 -> a3[label = m2]
+a3 -> a4[label = m3]
+a4 -> a5[label = m4]
+a5 -> a6[label = m5]
+a6 -> a7[label = m6]
+a7 -> a8[label = m7]
+a8 -> a9[label = m8]
+a9 -> a10[label = m9]
+a10 -> a11[label = m10]
+a11 -> a12[label = m11]
+a12 -> a13[label = m12]
+
+
+# Fecundities
+a1 -> egg[label = f1]
+a2 -> egg[label = f2]
+a3 -> egg[label = f3]
+a4 -> egg[label = f4]
+a5 -> egg[label = f5]
+a6 -> egg[label = f6]
+a7 -> egg[label = f7]
+a8 -> egg[label = f8]
+a9 -> egg[label = f9]
+a10 -> egg[label = f10]
+a11 -> egg[label = f11]
+a12 -> egg[label = f12]
+a13 -> egg[label = f13]
+}
+      ")
+```
+
+
+# Will your model have a pre-breeding census or post-breeding census?
+
+# The matrix written out symbolically
+
+
 ## Load the data
 
 ```{r}
 load("size.RData") #This is the entire data, loads it into a data.frame called size
-```
-
-
-##
-
-```{r}
-# Define Von Bert parameters
-# Garbin & Castello, 2014
-# L_inf <- mean(c(80, 80, 87.12, 94, 97.9, 97.3, 112.34, 89.38, 92.5))
-K <- mean(c(0.32, 0.6, 0.22, 0.38, 0.14, 0.25, 0.14, 0.38, 0.16))
-
-# Or from Us and Stiurskjgfas, 1981
-L_inf <- 102
-# K <- 0.55
-t_0 <- 0.02
-
-# Just to be clear, we use L-inf  and to from Ushisomething, and K from the review
-
-# Define fecundity parameters
-# From fishbase http://www.fishbase.se/Reproduction/FecundityList.php?ID=107&GenusName=Katsuwonus&SpeciesName=pelamis&fc=416&StockCode=121
-fec_a <- -1.33354
-fec_b <- 3.238
-# Define mortality
-
-m <- 0.63
-z <- 1.7
 ```
 
 ```{r}
@@ -68,6 +99,31 @@ fecundity <- function(length, a, b){
 }
 ```
 
+## Define demographic parameters
+
+```{r}
+# Define Von Bert parameters
+# Garbin & Castello, 2014
+# L_inf <- mean(c(80, 80, 87.12, 94, 97.9, 97.3, 112.34, 89.38, 92.5))
+# K <- mean(c(0.32, 0.6, 0.22, 0.38, 0.14, 0.25, 0.14, 0.38, 0.16))
+
+# Or from Us and Stiurskjgfas, 1981
+L_inf <- 102
+K <- 0.55
+t_0 <- -0.02
+
+# Just to be clear, we use L-inf  and to from Ushisomething, and K from the review
+
+# Define fecundity parameters
+# From fishbase http://www.fishbase.se/Reproduction/FecundityList.php?ID=107&GenusName=Katsuwonus&SpeciesName=pelamis&fc=416&StockCode=121
+fec_a <- -1.33354
+fec_b <- 3.238
+# Define mortality
+
+m <- 0.63
+z <- 1.39
+```
+
 ## Check population size by cohorts through time
 
 ```{r}
@@ -84,24 +140,15 @@ size %>%
   labs(x = "Year", y = "log N")
 ```
 
-## Build a vector with 13 age classes
 
-```{r}
-load("size_dist_1980.RData") #This is the n-vector for 1980, loads it to a vector called n
+# The matrix filled in with values
 
-n <- n %>% {
-  .$N}%>% 
-  c(rep(0, times = 8))
-```
-
-## Build a 14 by 14 matrix
-
-```{r}
+```{r, results='asis'}
 A <- matrix(0, 14, 14) #initial empty matrix with all 0
 
 # Populate matrix with mortality
 for (i in 2:14){
-  A[i,i-1] <- 1-m
+  A[i,i-1] <- exp(-1-z)
 }
 
 # Populate matrix with fecundity
@@ -110,19 +157,24 @@ lengths <- age2length(ages, L_inf, K, t_0)
 A[1,] <- fecundity(lengths, fec_a, fec_b)
 
 A[is.na(A)] <- 0
-A[2,1] <- 0.00001
+A[2,1] <- 0.0000001
 
 colnames(A) <- ages
 rownames(A) <- ages
 
-knitr::kable(A)
+knitr::kable(A, col.names = paste0("$a_",ages,"$"), row.names = F)
 ```
 
-## Use the total fecundity to populate our age0 class
+## Build a vector with 13 age classes
 
 ```{r}
+load("size_dist_1980.RData") #This is the n-vector for 1980, loads it to a vector called n
 
-n_0 <- sum(A[1, 2:14]*n)
+n <- n %>% {
+  .$N}%>% 
+  c(rep(0, times = 8))
+
+n_0 <- sum(A[1, 2:14]*n, na.rm = T)
 
 n <- c(n_0, n)
 
@@ -133,6 +185,7 @@ n <- c(n_0, n)
 
 ```{r}
 project <- popbio::pop.projection(A, n, 30)
-stage.vector.plot(project$stage.vectors, proportions = F)
+matplot(t(log(project$stage.vectors[-1,])), type = "l")
+
 ```
 
