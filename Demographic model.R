@@ -41,13 +41,18 @@ f <- t-m
 
 # Create a von Bert function
 
-vonbert <- function(length, l_inf, K, t_o){
+length2age <- function(length, l_inf, K, t_o){
   age <- (1/-K)*(log(1-(length/L_inf))) + t_o
   return(age)
 }
 
+age2length <- function(age, l_inf, K, t_o){
+  length <- l_inf*(1-exp(-K*(age-t_o)))
+  return(length)
+}
+
 fecundity <- function(length, a, b){
-  f <- a*length^b
+  f <- 10^(a+(b*log10(length)))
   
   return(f)
 }
@@ -57,7 +62,7 @@ fecundity <- function(length, a, b){
 # Make sure that proportions had stayed relatively constant trhough time:
 
 size %>%
-  mutate(Age = round(vonbert(ClassFrq, L_inf, K, t_0))) %>%
+  mutate(Age = round(length2age(ClassFrq, L_inf, K, t_0))) %>%
   group_by(YearC, Age) %>%
   summarize(N = sum(as.numeric(Nr))) %>% 
   mutate(Age = as.factor(Age)) %>% 
@@ -95,19 +100,18 @@ A <- matrix(0, 13, 13) #initial empty matrix
 
 # Populate matrix with mortality
 for (i in 2:13){
-  A[i,i-1] <- m
+  A[i,i-1] <- 1-m
 }
 
 # Populate matrix with fecundity
 
 ages <- seq(1:13)
-lengths <- vonbert(ages)
-A[1,] <- fecundity(lengths) #This function doesnt work yet. We need a function that translates ages to length (the original von bertalanfy equation, not the one we solved for t)
+lengths <- age2length(ages, L_inf, K, t_0)
+A[1,] <- fecundity(lengths, fec_a, fec_b) #This function doesnt work yet. We need a function that translates ages to length (the original von bertalanfy equation, not the one we solved for t)
 
-project <- popbio::pop.projection(A, n, 50)
+project <- popbio::pop.projection(A, n, 30)
 
-matplot(t(project$stage.vectors), type = "l")
-
+stage.vector.plot(project$stage.vectors)
 
 
 
