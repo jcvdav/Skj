@@ -101,7 +101,8 @@ for (i in 2:13){
 # Populate matrix with fecundity
 
 ages <- seq(1:13)
-A[1,] <- vonbert(ages) #This function doesnt work yet. We need a function that translates ages to length (the original von bertalanfy equation, not the one we solved for t)
+lengths <- vonbert(ages)
+A[1,] <- fecundity(lengths) #This function doesnt work yet. We need a function that translates ages to length (the original von bertalanfy equation, not the one we solved for t)
 
 project <- popbio::pop.projection(A, n, 50)
 
