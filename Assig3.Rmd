@@ -1,8 +1,10 @@
 ---
 title: "Assig3"
-author: "Juan Carlos Villaseñor-Derbez"
-date: "22 de febrero de 2017"
-output: html_document
+author: "VillaseÃƒÂ±or-Derbez, J.C. & Faro, C"
+subtitle: Demographic analysis
+output:
+  html_document: default
+  pdf_document: default
 ---
 
 ```{r}
@@ -17,34 +19,46 @@ suppressPackageStartupMessages({
 
 # Qualitative description of population structure
 
+Our data is composed by length data, which we transformed into expected age using the transformed Von Bertalanffy function $$ A = \frac {1}{-K} \times log(1-(\frac {L}{L_{inf}}))+t_0 $$, where: A = age, K = growth rate, L = length, $L_{inf}$ = asymptotic length. Therefore, our model use a age structure.
+
 # Description of the demographic information
+
+  - Mortality: $Z = 1.69$ (Garbin & Castello, 2014)
+  
+  - Fecundity: $a = -1.33354$, $b = 3.238$ (from [FISHBASE](www.fishbase.org))
+  
+  - von Bertanalnffy growth parameters: $L_inf = 102.0$, $K = 0.55$, $t_0 = -0.02$ (Uchiyama & Struhsaker, 1981)
+
 
 # A life-cycle diagram for your species
 
-```{r}
+```{r, fig.cap = "Figure 1 - Life-cycle diagram for Skipjack tuna (_Katsuwonus pelamis_). S indicates survival, and f indicates fecundity."}
+
 DiagrammeR::grViz("
       digraph boxes_and_circles{
 
 # Define nodes
-node [shape = circle]
+node [shape = circle
+      penwidth = 2,
+      fontsize = 24]
 
 egg; a1; a2; a3; a4; a5; a6; a7; a8; a9; a10; a11; a12; a13
 
 # Add edge statements
 #Advaance classes
-egg -> a1[label = m0]
-a1 -> a2[label = m1]
-a2 -> a3[label = m2]
-a3 -> a4[label = m3]
-a4 -> a5[label = m4]
-a5 -> a6[label = m5]
-a6 -> a7[label = m6]
-a7 -> a8[label = m7]
-a8 -> a9[label = m8]
-a9 -> a10[label = m9]
-a10 -> a11[label = m10]
-a11 -> a12[label = m11]
-a12 -> a13[label = m12]
+egg -> a1[label = s0]
+a1 -> a2[label = s1]
+a2 -> a3[label = s2]
+a3 -> a4[label = s3]
+a4 -> a5[label = s4]
+a5 -> a6[label = s5]
+a6 -> a7[label = s6]
+a7 -> a8[label = s7]
+a8 -> a9[label = s8]
+a9 -> a10[label = s9]
+a10 -> a11[label = s10]
+a11 -> a12[label = s11]
+a12 -> a13[label = s12]
 
 
 # Fecundities
@@ -62,42 +76,37 @@ a11 -> egg[label = f11]
 a12 -> egg[label = f12]
 a13 -> egg[label = f13]
 }
-      ")
+      ", height = 1000)
 ```
 
 
 # Will your model have a pre-breeding census or post-breeding census?
 
+The model we have defined axplicitly models eggs as a cohort (age = 0). We will conssider deleting this in the future, and explicitly calculate recruits.
+
 # The matrix written out symbolically
 
-
-## Load the data
-
 ```{r}
-load("size.RData") #This is the entire data, loads it into a data.frame called size
+#Build a matrix with text
+A <- matrix(0, 14, 14) #initial empty matrix with all 0
+
+# By using the $$, we can embed latex equations that will then be rendered to loog better
+# Populate matrix with mortality
+for (i in 2:14){
+  A[i,i-1] <- paste0("$s_{", i-1, ",", i-2, "}$")
+}
+
+ages <- seq(0:13)-1
+A[1,] <- paste0("$f_{", seq(1:14)-1,"}$")
+
+knitr::kable(A, col.names = paste0("$a_{",ages,"}$"), row.names = F, caption = "Table 1- Symbolical population matrix A. Subindices represent their rows and columns, respectively. The inferior diagonal represents survivals, while the first row represents facundities.")
+
 ```
 
-```{r}
-# Define the functions we need
 
-# Convert length to age using von bertalanffy model, solving for t
-length2age <- function(length, l_inf, K, t_o){
-  age <- (1/-K)*(log(1-(length/L_inf))) + t_o
-  return(age)
-}
 
-# Convert age to length using von bertalanffy model
-age2length <- function(age, l_inf, K, t_o){
-  length <- l_inf*(1-exp(-K*(age-t_o)))
-  return(length)
-}
 
-#Convert length to fecundity (number of eggs)
-fecundity <- function(length, a, b){
-  f <- 10^(a+(b*log10(length*10)))
-  return(f)
-}
-```
+# The matrix filled in with values
 
 ## Define demographic parameters
 
@@ -124,24 +133,30 @@ m <- 0.63
 z <- 1.39
 ```
 
-## Check population size by cohorts through time
+
+## Define the functions we will need
 
 ```{r}
-size %>%
-  mutate(Age = round(length2age(ClassFrq, L_inf, K, t_0))) %>%
-  group_by(YearC, Age) %>%
-  summarize(N = sum(as.numeric(Nr))) %>% 
-  mutate(Age = as.factor(Age)) %>% 
-  ungroup() %>% 
-  ggplot(aes(x = YearC, y = log(N), color = Age)) +
-  geom_point() +
-  geom_line() +
-  theme_bw() +
-  labs(x = "Year", y = "log N")
+# Convert length to age using von bertalanffy model, solving for t
+length2age <- function(length, l_inf, K, t_o){
+  age <- (1/-K)*(log(1-(length/L_inf))) + t_o
+  return(age)
+}
+
+# Convert age to length using von bertalanffy model
+age2length <- function(age, l_inf, K, t_o){
+  length <- l_inf*(1-exp(-K*(age-t_o)))
+  return(length)
+}
+
+#Convert length to fecundity (number of eggs)
+fecundity <- function(length, a, b){
+  f <- 10^(a+(b*log10(length*10)))
+  return(f)
+}
 ```
 
-
-# The matrix filled in with values
+## Create the matrix
 
 ```{r, results='asis'}
 A <- matrix(0, 14, 14) #initial empty matrix with all 0
@@ -158,16 +173,43 @@ A[1,] <- fecundity(lengths, fec_a, fec_b)
 
 A[is.na(A)] <- 0
 A[2,1] <- 0.0000001
+A[1,1] <- 0
 
 colnames(A) <- ages
 rownames(A) <- ages
 
-knitr::kable(A, col.names = paste0("$a_",ages,"$"), row.names = F)
+knitr::kable(A, col.names = paste0("$a_{",ages,"}$"), row.names = F, caption = "Table 2- Population matrix A. The inferior diagonal represents survivals, while the first row represents facundities.")
 ```
 
-## Build a vector with 13 age classes
+## Load the data
+
+```{r, eval = F, include = F}
+load("size.RData") #This is the entire data, loads it into a data.frame called size
+
+```
+
+
+## Check population size by cohorts through time
+
+```{r, eval = F, include = F}
+size %>%
+  mutate(Age = round(length2age(ClassFrq, L_inf, K, t_0))) %>%
+  group_by(YearC, Age) %>%
+  summarize(N = sum(as.numeric(Nr))) %>% 
+  mutate(Age = as.factor(Age)) %>% 
+  ungroup() %>% 
+  ggplot(aes(x = YearC, y = log(N), color = Age)) +
+  geom_point() +
+  geom_line() +
+  theme_bw() +
+  labs(x = "Year", y = "log N")
+```
+
+
+## Build a population vector
 
 ```{r}
+
 load("size_dist_1980.RData") #This is the n-vector for 1980, loads it to a vector called n
 
 n <- n %>% {
@@ -178,14 +220,90 @@ n_0 <- sum(A[1, 2:14]*n, na.rm = T)
 
 n <- c(n_0, n)
 
+n
+
 ```
 
 
 ## Project the population
 
 ```{r}
-project <- popbio::pop.projection(A, n, 30)
-matplot(t(log(project$stage.vectors[-1,])), type = "l")
+project <- popbio::pop.projection(A, n, 15)
 
 ```
+
+```{r, fig.cap = "Figure 2 - Population size through time, represented by ages."}
+pop <- project$stage.vectors %>% 
+  as.data.frame() %>% 
+  mutate(Age = as.factor(seq(0:13)-1)) %>% 
+  gather(Year, N, -Age) %>% 
+  mutate(Year = as.numeric(as.character(Year))) %>% 
+  select(Year, Age, N)
+
+ggplot(pop, aes(x = Year, y = log(N), color = Age)) +
+  geom_line() +
+  theme_bw()
+```
+
+
+# Asymptotic analysis of the matrix
+
+## Lambda
+
+$\lambda =$ `r project$lambda`
+
+```{r, fig.cap = "Figure 3 - Convergence of $\\lambda$ through time."}
+
+plot(project$pop.changes, type = "b", xlab = "Iterations", ylab = "Lambda")
+
+```
+
+
+## Stabe age structure
+
+```{r, fig.cap = "Figure 4 - Stabe age structure, reached after 15 iterations in the model."}
+
+pop %>%
+  filter(Year == 14) %>% 
+  ggplot(aes(x = Age, y = log(N))) +
+  geom_bar(stat = "identity") +
+  theme_bw()
+
+```
+
+
+## Sensitivity
+
+
+```{r, fig.cap = "Figure 5 - Sensitivity matrix."}
+
+sensitivity(A) %>% 
+  image2(box.offset=.1)
+
+```
+
+
+## Elasticity
+
+```{r, fig.cap = "Figure 6 - Elasticity matrix."}
+elasticity(A) %>% 
+  image2(box.offset = 0.1)
+```
+
+
+# Interpretation of the asymptotic results
+
+The $\lambda = 1.47$ shows that the population is projected to grow at rate of 47%. The result of the sensitivity analysis suggest that is most effective to intervene on the early ages. Since the species mature early (between ages 1 and 2), there is no necessity of conserving the old/big individuals that have higher fecundity, because the younger ones (in quantity) can provide enough eggs to maintain the population.
+
+# Discuss what is missing from the model, and how you might add the missing bits
+
+The model assumes the mortality is constant through ages. Better estimates of mortality/survival for different ages would show the real population structure.
+
+The model assumes that the population is density-independent. However, we believe that fecundity, recruitment and survival of this pelagic species is density dependent. Perhaps a first approach wil be to use a Beverton-Holt approach to calculate recruitment, although this assumes density dependence in all the model.
+
+Currently, all organisms are harvested in the model (excluding eggs). An interesting approach would be to set a size limit that reduces total effort on small sizes to natural effort by excluding fishing effort. This could allow us to evaluate the effect of a minimum catch size, management intervention aligned with the observed elasticities.
+
+Environmental variation is another aspect to consider. It is known that recruitment of fish can be affected by extreme environmental conditions, like El Nino. Further analysis could incorporate the effects of climate variability on recruitment.
+
+
 
