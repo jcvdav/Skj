@@ -1,9 +1,11 @@
 ---
-title: "Assig4"
-author: "Villaseñor-Derbez, J.C. & Faro, C"
+title: "Assignment 4 - Project the population"
+author: "Villasenor-Derbez, J.C. & Faro, C"
 subtitle: Demographic analysis
 output:
+  html_document: default
   pdf_document: default
+  word_document: default
 ---
 
 ```{r}
@@ -22,7 +24,7 @@ suppressPackageStartupMessages({
   
   - Fecundity: $a = -1.33354$, $b = 3.238$ (from [FISHBASE](www.fishbase.org))
   
-  - von Bertanalnffy growth parameters: $L_inf = 102.0$, $K = 0.55$, $t_0 = -0.02$ (Uchiyama & Struhsaker, 1981)
+  - von Bertanalnffy growth parameters: $L_{inf} = 102.0$, $K = 0.55$, $t_0 = -0.02$ (Uchiyama & Struhsaker, 1981)
 
 ## Define demographic parameters
 
@@ -49,6 +51,7 @@ z <- 1.39
 
 ```
 
+\clearpage
 
 ## Define the functions we will need
 
@@ -94,15 +97,8 @@ A[1,1] <- 0
 colnames(A) <- ages
 rownames(A) <- ages
 
-knitr::kable(A, col.names = paste0("$a_{",ages,"}$"), row.names = F, caption = "Table 2- Population matrix A. The inferior diagonal represents survivals, while the first row represents facundities.")
-```
-
-## Load the data
-
-```{r, eval = F, include = F}
-
-load("size.RData") #This is the entire data, loads it into a data.frame called size
-
+knitr::kable(A, col.names = paste0("$a_{",ages,"}$"), row.names = F,
+             caption = "Table I - Population matrix A. The inferior diagonal represents survivals, while the first row represents facundities.")
 ```
 
 ## Build a population vector
@@ -125,9 +121,10 @@ n
 
 ## Project the population
 
-We projected the population, stratified by ages, for 30 years in the future (Figure 1). The population seens to have a positive trend, which shows the population is increasing. 
+We projected the population, stratified by ages, for 30 years in the future (Figure 1). The population seems to have a positive trend, which shows the population is increasing. Note how one-year olds achieve a population size of log(N) = 40 by year 22 (dashed lines). We will use this reference point when comparing with the management intervention.
 
 ```{r}
+
 project <- popbio::pop.projection(A, n, 30)
 
 ```
@@ -148,16 +145,19 @@ ggplot(pop, aes(x = Year, y = log(N), color = Age)) +
 
 ```
 
-## Minimum catch size 1
+\clearpage
 
-This time we projected the population for 30 years in the future with a management intervention on the minimum size of capture (Figure 2). Our projection assume total compliance on the intervention, wich means the fishing pressure is equal to 0. Therefore, the total mortality (Z) is equal to the natural mortality (M) for individuals of age 1.
-Figure 3 shows that, with this management intervention, the total skipjack population achieves the same level 6 years earlier.
+## Minimum catch size
+
+This time we projected the population for 30 years in the future with a management intervention on the minimum size of capture (Figure 2). Our projection assumes total compliance on the intervention, which means the fishing pressure is equal to 0. Therefore, the total mortality (Z) is equal to the natural mortality (M) for individuals of age 1. By protecting individuals of age 1 (the age at which they reach maturity), we observe a faster recovery in the fishery. This can be observed by comparing the log(N) = 40 at year 22, which is now reached at year 18 for one-year olds. Additionally, in the context of the entire stock, Figure 3 shows that with the management intervention total skipjack population recovers faster.
 
 ```{r}
 
 A_min <- A
 
 A_min[3,2] <- exp(-m)
+
+knitr::kable(A_min, col.names = paste0("$a_{",ages,"}$"), row.names = F, caption = "Table I - Population matrix A, modifying mortality of age 1 organisms. The inferior diagonal represents survivals, while the first row represents facundities.")
   
 ```
 
@@ -182,7 +182,7 @@ ggplot(pop, aes(x = Year, y = log(N), color = Age)) +
   geom_vline(xintercept = 18, color = "red", linetype = "dashed", size = 1)
 ```
 
-```{r, fig.cap= "Figure 3 - Total population size through time"}
+```{r, fig.cap= "Figure 3 - Total population size through time."}
 
 tot1 <- project$pop.sizes
 tot2 <- project_min$pop.sizes
@@ -191,9 +191,10 @@ time <- seq(1:30)
 data.frame(time, BAU = tot1, Int = tot2) %>% 
   gather(scenario, popsize, -time) %>% 
   ggplot(aes(x = time, y = log(popsize), color = scenario)) +
-  geom_point() +
-  geom_line() +
-  theme_bw()
+  geom_point(size = 2) +
+  geom_line(size = 1) +
+  theme_bw() +
+  scale_color_brewer(palette = "Set1")
 
 ```
 
