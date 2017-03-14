@@ -125,12 +125,14 @@ n
 
 ## Project the population
 
+We projected the population, stratified by ages, for 30 years in the future (Figure 1). The population seens to have a positive trend, which shows the population is increasing. 
+
 ```{r}
 project <- popbio::pop.projection(A, n, 30)
 
 ```
 
-```{r, fig.cap = "Figure 2 - Population size through time, represented by ages."}
+```{r, fig.cap = "Figure 1 - Population size through time, represented by ages."}
 pop <- project$stage.vectors %>% 
   as.data.frame() %>% 
   mutate(Age = as.factor(seq(0:13)-1)) %>% 
@@ -147,6 +149,9 @@ ggplot(pop, aes(x = Year, y = log(N), color = Age)) +
 ```
 
 ## Minimum catch size 1
+
+This time we projected the population for 30 years in the future with a management intervention on the minimum size of capture (Figure 2). Our projection assume total compliance on the intervention, wich means the fishing pressure is equal to 0. Therefore, the total mortality (Z) is equal to the natural mortality (M) for individuals of age 1.
+Figure 3 shows that, with this management intervention, the total skipjack population achieves the same level 6 years earlier.
 
 ```{r}
 
@@ -177,7 +182,7 @@ ggplot(pop, aes(x = Year, y = log(N), color = Age)) +
   geom_vline(xintercept = 18, color = "red", linetype = "dashed", size = 1)
 ```
 
-```{r}
+```{r, fig.cap= "Figure 3 - Total population size through time"}
 
 tot1 <- project$pop.sizes
 tot2 <- project_min$pop.sizes
