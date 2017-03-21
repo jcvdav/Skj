@@ -299,15 +299,17 @@ elasticity(A) %>%
 
 The $\lambda = 1.47$ shows that the population is projected to grow at rate of 47%. The result of the sensitivity analysis suggest that is most effective to intervene on the early ages. Since the species mature early (between ages 1 and 2), there is no necessity of conserving the old/big individuals that have higher fecundity, because the younger ones (in quantity) can provide enough eggs to maintain the population.
 
+
 ### Discuss what is missing from the model, and how you might add the missing bits
 
 The model assumes the mortality is constant through ages. Better estimates of mortality/survival for different ages would show the real population structure.
 
 The model assumes that the population is density-independent. However, we believe that fecundity, recruitment and survival of this pelagic species is density dependent. Perhaps a first approach wil be to use a Beverton-Holt approach to calculate recruitment, although this assumes density dependence in all the model.
 
-Currently, all organisms are harvested in the model (excluding eggs). An interesting approach would be to set a size limit that reduces total effort on small sizes to natural effort by excluding fishing effort. This could allow us to evaluate the effect of a minimum catch size, management intervention aligned with the observed elasticities.
+Currently, organisms of all sizes are harvested in the model (excluding eggs). An interesting approach would be to set a size limit that reduces total effort on small sizes to natural effort by excluding fishing effort. This could allow us to evaluate the effect of a minimum catch size, management intervention aligned with the observed elasticities.
 
 Environmental variation is another aspect to consider. It is known that recruitment of fish can be affected by extreme environmental conditions, like El Nino. Further analysis could incorporate the effects of climate variability on recruitment.
+
 
 ## Projections of the model, typically including a baseline scenario and one or more management or environmental change scenarios
 
