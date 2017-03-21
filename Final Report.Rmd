@@ -1,5 +1,5 @@
 ---
-title: "An overview of the status and management of the Skipjack Tuna on the Atlantic Ocean"
+title: "An overview of the status and management of the Skipjack Tuna (*Katsuwonus pelamis*) in the Atlantic Ocean"
 subtitle: "Final Report for ESM 211 - Applied Population Ecology"
 author: "Caio Faro & Juan Carlos Villasenor-Derbez"
 date: "March 20, 2017"
@@ -13,6 +13,7 @@ suppressPackageStartupMessages({
   library(reshape)
   library(popbio)
   library(ggExtra)
+  library(knitr)
 })
 ```
 
@@ -42,16 +43,17 @@ The data includes a total of 3,711 records of catch data, specified for 66 years
 ## Evidence for past trends
 After comments on the first assignment, we looked for data on effort for Skipjack fisheries on the Atlantic Ocean. We found data from ICCAT on the number of fishing hours associated with catch from years 2006 to 2015. We then explored the relationship between effort (fishing hours) and time (Fig. 1), by fitting a linear model where coefficients were estimated by Ordinary Least Squares with heteroskedastic-robust standard errors, and tested the significance of the slope and intercept coefficients. Neither the intercept or slope showed significant change through time (Table 1), indicating that fishing effort had remained relatively constant from 2006 to 2015 (Fig 1).
 
-__Fig and Reg Table__
+__Fig and Reg Table__ **Looking for it**
 
 We then used a larger dataset that included catches from 1950 to 2015, by country (Fig 2), and calculated the total catches by year (Fig. 3). We counted the unique countries that participated in the fishery or for which there is data (Figure 4), and used this as a proxy of total fishing effort. We then normalized total catches by dividing them by the number of countries participating in the fishery each year (Fig. 5). Here, we can see an increase in catches even after normalizing for our proxy of effort. For the Eastern stock (ATE), we see a steady increase since 1950, resulting in an order of magnitude higher values for 2015, as compared to 1950. On the other hand, the Western stock (WTE) does not show an increase of similar magnitude. Interannual variability in the data is in the order of 5,000 tonnes for ATE, and 1500 for ATW. Tables 2 and 3 present the regression coefficients for CPUE as a function of time, for each stock.
 
-__Figs and Reg tables__
+__Figs and Reg tables__ **Looking for it**
 
 
 ## Description of the model(s) used to project the population, and the sources of information about the model parameters
 
 ### Qualitative description of population structure
+
 
 For our analyses, we use a age structure model.
 
@@ -91,7 +93,7 @@ age2length <- function(age, l_inf, K, t_o){
 }
 ```
 
-## Fecundity at length
+### Fecundity at length
 
 $$f = 10^{(a+(b*log_{10}(L*10)))}$$
 
@@ -173,35 +175,6 @@ a13 -> egg[label = f13]
       ", height = 1000)
 ```
 
-
-~~### Will your model have a pre-breeding census or post-breeding census?~~
-
-~~The model we have defined explicitly models eggs as a cohort (age = 0). We will conssider deleting this in the future, and explicitly calculate recruits.~~
-
-### The matrix written out symbolically __(MAYBE WE DON'T NEED THAT)__
-
-```{r}
-#Build a matrix with text
-A <- matrix(0, 14, 14) #initial empty matrix with all 0
-
-# By using the $$, we can embed latex equations that will then be rendered to loog better
-# Populate matrix with mortality
-for (i in 2:14){
-  A[i,i-1] <- paste0("$s_{", i-1, ",", i-2, "}$")
-}
-
-ages <- seq(0:13)-1
-A[1,] <- paste0("$f_{", seq(1:14)-1,"}$")
-
-knitr::kable(A, col.names = paste0("$a_{",ages,"}$"), row.names = F, caption = "Table 1- Symbolical population matrix A. Subindices represent their rows and columns, respectively. The inferior diagonal represents survivals, while the first row represents facundities.")
-
-```
-
-
-
-
-### The matrix filled in with values
-
 #### Define demographic parameters
 
 ```{r}
@@ -217,7 +190,7 @@ fec_b <- 3.238
 
 # Define mortality
 m <- 0.63
-z <- 1.39
+z <- 1.69
 ```
 
 
@@ -247,32 +220,7 @@ knitr::kable(A,
 
 ```
 
-#### Load the data
-
-```{r, eval = F, include = F}
-load("size.RData") #This is the entire data, loads it into a data.frame called size
-
-```
-
-
-#### Check population size by cohorts through time
-
-```{r, eval = F, include = F}
-size %>%
-  mutate(Age = round(length2age(ClassFrq, L_inf, K, t_0))) %>%
-  group_by(YearC, Age) %>%
-  summarize(N = sum(as.numeric(Nr))) %>% 
-  mutate(Age = as.factor(Age)) %>% 
-  ungroup() %>% 
-  ggplot(aes(x = YearC, y = log(N), color = Age)) +
-  geom_point() +
-  geom_line() +
-  theme_bw() +
-  labs(x = "Year", y = "log N")
-```
-
-
-#### Build a population vector __(AFTER THE PART YOU SENT, I COMMENTED FEW LINES THAT I DON'T KNOW IF SHOULD STILL BE THERE... ALSO, I TRIED WITHOUT COMMENTING BUT THERE IS AN ERROR)__
+#### Build a population vector
 
 ```{r}
 
@@ -294,12 +242,6 @@ data.frame(N = n,
   removeGridX() +
   theme(text = element_text(size = 14)) +
   labs(x = "Age (years)", y = "log-transformed abundance")
-
-# n_0 <- sum(A[1, 2:14]*n, na.rm = T)
-# 
-# n <- c(n_0, n)
-# 
-# n
 
 ```
 
@@ -335,20 +277,6 @@ $\lambda =$ `r project$lambda`
 plot(project$pop.changes, type = "b", xlab = "Iterations", ylab = "Lambda")
 
 ```
-
-
-#### Stabe age structure __(NOT FINDING THE OBJECT POP -- THAT'S WHY I USED EVAL=FALSE)__
-
-```{r, eval=FALSE, fig.cap = "Figure 4 - Stabe age structure, reached after 15 iterations in the model."}
-
-pop %>%
-  filter(Year == 14) %>% 
-  ggplot(aes(x = Age, y = log(N))) +
-  geom_bar(stat = "identity") +
-  theme_bw()
-
-```
-
 
 #### Sensitivity
 
@@ -387,68 +315,83 @@ Environmental variation is another aspect to consider. It is known that recruitm
 
 ### Description of the demographic information
 
-  - Mortality: $Z = 1.39$ and $M = 0.63$ (Garbin & Castello, 2014)
+  - Mortality: $Z = 1.69$ and $M = 0.63$ (Garbin & Castello, 2014)
   
   - Fecundity: $a = -1.33354$, $b = 3.238$ (from [FISHBASE](www.fishbase.org))
   
   - von Bertanalnffy growth parameters: $L_{inf} = 102.0$, $K = 0.55$, $t_0 = -0.02$ (Uchiyama & Struhsaker, 1981)
 
-\clearpage
-
 #### Create the matrix
 
 ```{r, results='asis'}
-A <- matrix(0, 14, 14) #initial empty matrix with all 0
+A <- matrix(0, 13, 13) #initial empty matrix with all 0
 
 # Populate matrix with mortality
-for (i in 2:14){
+for (i in 2:13){
   A[i,i-1] <- exp(-z)
 }
 
 # Populate matrix with fecundity
-ages <- seq(0:13)-1
+ages <- seq(1,13)
 lengths <- age2length(ages, L_inf, K, t_0)
-A[1,] <- fecundity(lengths, fec_a, fec_b)
-
-A[is.na(A)] <- 0
-A[2,1] <- 0.0000001
-A[1,1] <- 0
+A[1,] <- fecundity(lengths, fec_a, fec_b) * 0.5 * 1e-7 #Multiply fecundity times 0.5 (F:M = 1:1) and times 1e-7 (survival of 1 year olds)
 
 colnames(A) <- ages
 rownames(A) <- ages
 
-knitr::kable(A, col.names = paste0("$a_{",ages,"}$"), row.names = F,
-             caption = "Table I - Population matrix A. The inferior diagonal represents survivals, while the first row represents facundities.")
+kable(A,
+      digits = 2,
+      col.names = paste0("$a_{",ages,"}$"),
+      row.names = F,
+      caption = "Population matrix A. The inferior diagonal represents survivals, while the first row represents facundities.")
+
 ```
 
+#### Build the population vector
 
-#### Project the population __(ERROR IN LINE 430)__
+```{r, warning = F, fig.cap="Initial population population structure, represented by ages (x-axis) and relative abundances (y-axis). Numbers above bars indicate the corresponding size (TL cm) for each age."}
 
-We projected the population, stratified by ages, for 30 years in the future (Figure 1). The population seems to have a positive trend, which shows the population is increasing. Note how one-year olds achieve a population size of log(N) = 40 by year 22 (dashed lines). We will use this reference point when comparing with the management intervention.
+load("size_dist_1980.RData") #This is the n-vector for 1980, loads it to a vector called n
+
+n <- n %>% {
+  .$N}%>% 
+  c(rep(0, times = 8))
+
+data.frame(N = n,
+           Age = ages) %>% 
+  mutate(N = N/sum(N)) %>% 
+  ggplot(aes(x = Age, y = N)) +
+  geom_bar(stat = "identity", fill = "gray", color = "black", size = 1) +
+  geom_text(aes(x = Age, y = N + 0.05, label = formatC(lengths, digits = 0, format = "f"))) +
+  theme_bw() +
+  scale_x_continuous(expand = c(0.01, 0.01), breaks = seq(1, 13)) +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 1), labels = scales::percent) +
+  removeGridX() +
+  theme(text = element_text(size = 14)) +
+  labs(x = "Age (years)", y = "log-transformed abundance")
+
+```
+
+#### Project the population
+
+We projected the population, stratified by ages, for 30 years in the future. The population seems to have a positive trend, which shows the population is increasing. Note how one-year olds achieve a population size of log(N) = 40 by year 22 (dashed lines). We will use this reference point when comparing with the management intervention.
 
 ```{r}
-
-project <- popbio::pop.projection(A, n, 30)
-
+project <- popbio::pop.projection(A, n, 20)
 ```
 
 ```{r, fig.cap = "Figure 1 - Population size through time, represented by ages."}
-pop <- project$stage.vectors %>% 
+project$stage.vectors %>% 
   as.data.frame() %>% 
-  mutate(Age = as.factor(seq(0:13)-1)) %>% 
+  mutate(Age = as.factor(seq(1,13))) %>% 
   gather(Year, N, -Age) %>% 
   mutate(Year = as.numeric(as.character(Year))) %>% 
-  select(Year, Age, N)
-
-ggplot(pop, aes(x = Year, y = log(N), color = Age)) +
+  select(Year, Age, N) %>% 
+  ggplot(aes(x = Year, y = log(N), color = Age)) +
   geom_line() +
-  theme_bw() +
-  geom_hline(yintercept = 40, color = "black", linetype = "dashed", size = 1) +
-  geom_vline(xintercept = 22, color = "black", linetype = "dashed", size = 1)
+  theme_bw()
 
 ```
-
-\clearpage
 
 #### Minimum catch size
 
@@ -470,7 +413,6 @@ knitr::kable(A_min,
 
 ```{r}
 project_min <- popbio::pop.projection(A_min, n, 20)
-
 ```
 
 ```{r, fig.cap = "Population size through time, represented by ages."}
@@ -483,22 +425,6 @@ project_min$stage.vectors %>%
   ggplot(aes(x = Year, y = log(N), color = Age)) +
   geom_line() +
   theme_bw()
-```
-
-```{r, fig.cap = "Figure 2 - Population size through time, represented by ages."}
-pop <- project_min$stage.vectors %>% 
-  as.data.frame() %>% 
-  mutate(Age = as.factor(seq(0:13)-1)) %>% 
-  gather(Year, N, -Age) %>% 
-  mutate(Year = as.numeric(as.character(Year))) %>% 
-  select(Year, Age, N)
-
-ggplot(pop, aes(x = Year, y = log(N), color = Age)) +
-  geom_line() +
-  theme_bw() +
-  geom_hline(yintercept = 40, color = "black", linetype = "dashed", size = 1) +
-  geom_vline(xintercept = 22, color = "black", linetype = "dashed", size = 1) +
-  geom_vline(xintercept = 18, color = "red", linetype = "dashed", size = 1)
 ```
 
 ```{r, fig.cap= "Total population size through time."}
@@ -532,6 +458,7 @@ data.frame(Age = ages, BAU = project$stable.stage, Int = project_min$stable.stag
   labs(x = "Age (years)", y = "Relative abundance")
   
 ```
+
 
 ```{r}
 data.frame(Age = ages, BAU = project$stable.stage, Int = project_min$stable.stage) %>% 
