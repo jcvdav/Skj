@@ -1,13 +1,13 @@
 ---
-title: "An overview of the status and management of the Skipjack Tuna (*Katsuwonus pelamis*) in the Atlantic Ocean"
-subtitle: "Final Report for ESM 211 - Applied Population Ecology"
+title: An overview of the status and management of the Skipjack Tuna (*Katsuwonus pelamis*) in the Atlantic Ocean
 author: "Caio Faro & Juan Carlos Villasenor-Derbez"
 date: "March 20, 2017"
-output: 
-  pdf_document: 
+output:
+  pdf_document:
     fig_caption: yes
     fig_height: 3
     fig_width: 6
+subtitle: Final Report for ESM 211 - Applied Population Ecology
 ---
 
 ```{r setup}
@@ -246,8 +246,8 @@ $$f = 10^{(a+(b*log_{10}(L*10)))}$$
 Where:
 
   - $f$ = fecundity (number of eggs)
-  - $a$ = **NAME HERE**
-  - $b$ = **NAME HERE**
+  - $a$ = constant
+  - $b$ = constant
   - $L$ = length (cm)
   
 As a function, this takes the form:
@@ -269,9 +269,8 @@ For this report, we used data from the literature:
   
   - Fecundity: $a = -1.33354$, $b = 3.238$ (from [FISHBASE](www.fishbase.org))
   
-  - von Bertanalnffy growth parameters: $L_inf = 102.0$, $K = 0.55$, $t_0 = -0.02$ (Uchiyama & Struhsaker, 1981)
+  - von Bertanalnffy growth parameters: $L_{inf} = 102.0$, $K = 0.55$, $t_0 = -0.02$ (Uchiyama & Struhsaker, 1981)
 
-\clearpage
 
 ### A life-cycle diagram for your species
 
@@ -279,20 +278,12 @@ For this report, we used data from the literature:
 
 \clearpage
 
-## Projections of the model, typically including a baseline scenario and one or more management or environmental change scenarios
-
-### Description of the demographic information
-
-  - Mortality: $Z = 1.69$ and $M = 0.63$ (Garbin & Castello, 2014)
-  
-  - Fecundity: $a = -1.33354$, $b = 3.238$ (from [FISHBASE](www.fishbase.org))
-  
-  - von Bertanalnffy growth parameters: $L_{inf} = 102.0$, $K = 0.55$, $t_0 = -0.02$ (Uchiyama & Struhsaker, 1981)
+## Projections of the model, including a baseline scenario and one management scenarios
   
 ### Define demographic parameters
 
 ```{r}
-# Or from Us and Stiurskjgfas, 1981
+# Or from Uchiyama & Struhsaker, 1981
 L_inf <- 102
 K <- 0.55
 t_0 <- -0.02
@@ -360,10 +351,25 @@ data.frame(N = n,
 
 ### Asymptotic analysis of the matrix
 
+We projected the population, stratified by ages, for 20 years in the future. The population seems to have a positive trend, which shows the population is increasing.
+
 ```{r}
 project <- popbio::pop.projection(A, n, 20)
 ```
 
+```{r, fig.cap = "Population size through time, represented by ages."}
+
+project$stage.vectors %>% 
+     as.data.frame() %>% 
+     mutate(Age = as.factor(seq(1,13))) %>% 
+     gather(Year, N, -Age) %>% 
+     mutate(Year = as.numeric(as.character(Year))) %>% 
+     select(Year, Age, N) %>% 
+     ggplot(aes(x = Year, y = log(N), color = Age)) +
+     geom_line() +
+     theme_bw()
+
+```
 
 ### Lambda
 
@@ -393,12 +399,12 @@ elasticity(A) %>%
 ```
 
 
-### Interpretation of the asymptotic results
+### Interpretation of results
 
 The $\lambda = 1.47$ shows that the population is projected to grow at rate of 47%. The result of the sensitivity analysis suggest that is most effective to intervene on the early ages. Since the species mature early (between ages 1 and 2), there is no necessity of conserving the old/big individuals that have higher fecundity, because the younger ones (in quantity) can provide enough eggs to maintain the population.
 
 
-### Discuss what is missing from the model, and how you might add the missing bits
+### Discussion
 
 The model assumes the mortality is constant through ages. Better estimates of mortality/survival for different ages would show the real population structure.
 
@@ -408,94 +414,8 @@ Currently, organisms of all sizes are harvested in the model (excluding eggs). A
 
 Environmental variation is another aspect to consider. It is known that recruitment of fish can be affected by extreme environmental conditions, like El Nino. Further analysis could incorporate the effects of climate variability on recruitment.
 
-<<<<<<< HEAD
 
-## Projections of the model, typically including a baseline scenario and one or more management or environmental change scenarios
-
-### Description of the demographic information
-
-  - Mortality: $Z = 1.69$ and $M = 0.63$ (Garbin & Castello, 2014)
-  
-  - Fecundity: $a = -1.33354$, $b = 3.238$ (from [FISHBASE](www.fishbase.org))
-  
-  - von Bertanalnffy growth parameters: $L_{inf} = 102.0$, $K = 0.55$, $t_0 = -0.02$ (Uchiyama & Struhsaker, 1981)
-
-#### Create the matrix
-
-```{r, results='asis'}
-A <- matrix(0, 13, 13) #initial empty matrix with all 0
-
-# Populate matrix with mortality
-for (i in 2:13){
-  A[i,i-1] <- exp(-z)
-}
-
-# Populate matrix with fecundity
-ages <- seq(1,13)
-lengths <- age2length(ages, L_inf, K, t_0)
-A[1,] <- fecundity(lengths, fec_a, fec_b) * 0.5 * 1e-7 #Multiply fecundity times 0.5 (F:M = 1:1) and times 1e-7 (survival of 1 year olds)
-
-colnames(A) <- ages
-rownames(A) <- ages
-
-kable(A,
-      digits = 2,
-      col.names = paste0("$a_{",ages,"}$"),
-      row.names = F,
-      caption = "Population matrix A. The inferior diagonal represents survivals, while the first row represents facundities.")
-
-```
-
-#### Build the population vector
-
-```{r, warning = F, fig.cap="Initial population population structure, represented by ages (x-axis) and relative abundances (y-axis). Numbers above bars indicate the corresponding size (TL cm) for each age."}
-
-load("size_dist_1980.RData") #This is the n-vector for 1980, loads it to a vector called n
-
-n <- n %>% {
-  .$N}%>% 
-  c(rep(0, times = 8))
-
-data.frame(N = n,
-           Age = ages) %>% 
-  mutate(N = N/sum(N)) %>% 
-  ggplot(aes(x = Age, y = N)) +
-  geom_bar(stat = "identity", fill = "gray", color = "black", size = 1) +
-  geom_text(aes(x = Age, y = N + 0.05, label = formatC(lengths, digits = 0, format = "f"))) +
-  theme_bw() +
-  scale_x_continuous(expand = c(0.01, 0.01), breaks = seq(1, 13)) +
-  scale_y_continuous(expand = c(0, 0), limits = c(0, 1), labels = scales::percent) +
-  removeGridX() +
-  theme(text = element_text(size = 14)) +
-  labs(x = "Age (years)", y = "log-transformed abundance")
-
-```
-=======
->>>>>>> fdffedb33256932220818a75ff2026fcda220bf0
-
-#### Project the population
-
-We projected the population, stratified by ages, for 20 years in the future. The population seems to have a positive trend, which shows the population is increasing.
-#### Project the population
-
-```{r}
-project <- popbio::pop.projection(A, n, 20)
-```
-
-```{r, fig.cap = "Figure 1 - Population size through time, represented by ages."}
-project$stage.vectors %>% 
-  as.data.frame() %>% 
-  mutate(Age = as.factor(seq(1,13))) %>% 
-  gather(Year, N, -Age) %>% 
-  mutate(Year = as.numeric(as.character(Year))) %>% 
-  select(Year, Age, N) %>% 
-  ggplot(aes(x = Year, y = log(N), color = Age)) +
-  geom_line() +
-  theme_bw()
-
-```
-
-#### Minimum catch size
+#### Management intervention: Minimum catch size
 
 This time we projected the population for 30 years in the future with a management intervention on the minimum size of capture (Figure X) set at 67 cm (upper limit of age = 1) based on the sensitivity analysis. Our projection assumes total compliance on the intervention, which means the fishing pressure is equal to 0. Therefore, the total mortality (Z) is equal to the natural mortality (M) for individuals of age 1. By protecting individuals of age 1 (the age at which they reach maturity), we observe a faster recovery in the fishery. This can be observed by comparing the log(N) = 40 at year 22, which is now reached at year 18 for one-year olds. Additionally, in the context of the entire stock, Figure 3 shows that with the management intervention total skipjack population recovers faster.
 
