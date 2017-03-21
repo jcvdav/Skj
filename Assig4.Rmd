@@ -3,8 +3,8 @@ title: "Assignment 4 - Project the population"
 author: "Villasenor-Derbez, J.C. & Faro, C"
 subtitle: Demographic analysis
 output:
-  html_document: default
   pdf_document: default
+  html_document: default
   word_document: default
 ---
 

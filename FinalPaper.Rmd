@@ -1,0 +1,246 @@
+---
+title: "ESM 211 Applied Population Ecology Final Paper"
+subtitle: "Fancy title about Skipjack, including scientific name and shit"
+author: "Villaseñor-Derbez, J.C., Faro, C"
+output:
+  pdf_document: default
+---
+
+\clearpage
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+suppressPackageStartupMessages({
+  library(tidyverse)
+  library(stargazer)
+  library(popbio)
+  library(knitr)
+  library(ggExtra)
+})
+```
+
+## Define the functions we will need
+
+### Age at length
+
+$$A = \frac {1}{-K} \times log(1-(\frac {L}{L_{inf}}))+t_0$$
+
+Where:
+
+  - $A$ = age (years)
+  - $K$ = growth rate
+  - $L$ = length (cm)
+  - $L_{inf}$ = asymptotic length (cm)
+  
+The model can then be made into a function as follows:
+
+```{r}
+# Convert length to age using von bertalanffy model, solving for A
+length2age <- function(length, l_inf, K, t_o){
+  age <- (1/-K)*(log(1-(length/L_inf))) + t_o
+  return(age)
+}
+```
+
+### Length at age
+
+Solving for $L$ in the equation above, we obtain:
+
+$$L = l_{inf}(1-exp^{(-K(A-t_o))})$$
+
+Which can be made into a function as:
+
+```{r}
+# Convert age to length using von bertalanffy model
+age2length <- function(age, l_inf, K, t_o){
+  length <- l_inf*(1-exp(-K*(age-t_o)))
+  return(length)
+}
+```
+
+## Fecundity at length
+
+$$f = 10^{(a+(b*log_{10}(L*10)))}$$
+
+Where:
+
+  - $f$ = fecundity (number of eggs)
+  - $a$ = **NAME HERE**
+  - $b$ = **NAME HERE**
+  - $L$ = length (cm)
+  
+As a function, this takes the form:
+
+```{r}
+#Convert length to fecundity (number of eggs)
+fecundity <- function(length, a, b){
+  f <- 10^(a+(b*log10(length*10)))
+  return(f)
+}
+```
+
+## Define demographic parameters
+
+```{r}
+# Or from Us and Stiurskjgfas, 1981
+L_inf <- 102
+K <- 0.55
+t_0 <- -0.02
+
+# Fecundity parameters
+fec_a <- -1.33354
+fec_b <- 3.238
+
+# Mortality
+m <- 0.63
+z <- 1.39
+
+```
+
+
+```{r, results='asis'}
+A <- matrix(0, 13, 13) #initial empty matrix with all 0
+
+# Populate matrix with mortality
+for (i in 2:13){
+  A[i,i-1] <- exp(-z)
+}
+
+# Populate matrix with fecundity
+ages <- seq(1,13)
+lengths <- age2length(ages, L_inf, K, t_0)
+A[1,] <- fecundity(lengths, fec_a, fec_b) * 0.5 * 1e-7 #Multiply fecundity times 0.5 (F:M = 1:1) and times 1e-7 (survival of 1 year olds)
+
+colnames(A) <- ages
+rownames(A) <- ages
+
+kable(A,
+      digits = 2,
+      col.names = paste0("$a_{",ages,"}$"),
+      row.names = F,
+      caption = "Population matrix A. The inferior diagonal represents survivals, while the first row represents facundities.")
+
+```
+
+
+## Build a population vector
+
+```{r, warning = F, fig.cap="Initial population population structure, represented by ages (x-axis) and relative abundances (y-axis). Numbers above bars indicate the corresponding size (TL cm) for each age."}
+
+load("size_dist_1980.RData") #This is the n-vector for 1980, loads it to a vector called n
+
+n <- n %>% {
+  .$N}%>% 
+  c(rep(0, times = 8))
+
+data.frame(N = n,
+           Age = ages) %>% 
+  mutate(N = N/sum(N)) %>% 
+  ggplot(aes(x = Age, y = N)) +
+  geom_bar(stat = "identity", fill = "gray", color = "black", size = 1) +
+  geom_text(aes(x = Age, y = N + 0.05, label = formatC(lengths, digits = 0, format = "f"))) +
+  theme_bw() +
+  scale_x_continuous(expand = c(0.01, 0.01), breaks = seq(1, 13)) +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 1), labels = scales::percent) +
+  removeGridX() +
+  theme(text = element_text(size = 14)) +
+  labs(x = "Age (years)", y = "log-transformed abundance")
+
+```
+
+```{r}
+project <- popbio::pop.projection(A, n, 20)
+```
+
+```{r, fig.cap = "Figure 1 - Population size through time, represented by ages."}
+project$stage.vectors %>% 
+  as.data.frame() %>% 
+  mutate(Age = as.factor(seq(1,13))) %>% 
+  gather(Year, N, -Age) %>% 
+  mutate(Year = as.numeric(as.character(Year))) %>% 
+  select(Year, Age, N) %>% 
+  ggplot(aes(x = Year, y = log(N), color = Age)) +
+  geom_line() +
+  theme_bw()
+
+```
+
+```{r}
+
+A_min <- A
+
+A_min[2, 1] <- exp(-m)
+
+knitr::kable(A_min,
+      digits = 2,
+      col.names = paste0("$a_{",ages,"}$"),
+      row.names = F,
+      caption = "Population matrix $\\hat{A}$, modifying mortality of age 1 organisms through a minimum catch size set at 67 cm. The inferior diagonal represents survivals, while the first row represents facundities.")
+  
+```
+
+```{r}
+project_min <- popbio::pop.projection(A_min, n, 20)
+```
+
+```{r, fig.cap = "Population size through time, represented by ages."}
+project_min$stage.vectors %>% 
+  as.data.frame() %>% 
+  mutate(Age = as.factor(seq(1, 13))) %>% 
+  gather(Year, N, -Age) %>% 
+  mutate(Year = as.numeric(as.character(Year))) %>% 
+  select(Year, Age, N) %>% 
+  ggplot(aes(x = Year, y = log(N), color = Age)) +
+  geom_line() +
+  theme_bw()
+```
+
+```{r, fig.cap= "Total population size through time."}
+
+tot1 <- project$pop.sizes
+tot2 <- project_min$pop.sizes
+time <- seq(1:20)
+
+data.frame(time, BAU = tot1, Int = tot2) %>% 
+  gather(scenario, popsize, -time) %>% 
+  ggplot(aes(x = time, y = log(popsize), color = scenario)) +
+  geom_point(size = 2) +
+  geom_line(size = 1) +
+  theme_bw() +
+  scale_color_brewer(palette = "Set1")
+
+```
+
+```{r, fig.cap = "Stable stage population structure, represented by ages (x-axis) and relative abundances (y-axis). Numbers above bars indicate the corresponding size (TL cm) for each age."}
+data.frame(Age = ages, BAU = project$stable.stage, Int = project_min$stable.stage) %>% 
+  gather(scenario, N, -Age) %>% 
+  ggplot(aes(x = Age, y = N)) +
+  geom_bar(stat = "identity", fill = "gray", color = "black", size = 1) +
+  facet_grid(~scenario, scales = "free_y") +
+  geom_text(aes(x = Age, y = N + 0.05, label = formatC(age2length(Age,  L_inf, K, t_0), digits = 0, format = "f")), size = 3) +
+  theme_bw() +
+  scale_x_continuous(expand = c(0.01, 0.01), breaks = seq(1, 13)) +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 1), labels = scales::percent) +
+  removeGridX() +
+  theme(text = element_text(size = 14)) +
+  labs(x = "Age (years)", y = "Relative abundance")
+  
+```
+
+
+```{r}
+data.frame(Age = ages, BAU = project$stable.stage, Int = project_min$stable.stage) %>% 
+  mutate(Diff = Int - BAU) %>% 
+  ggplot(aes(x = Age, y = Diff)) +
+  geom_bar(stat = "identity", fill = "gray", color = "black", size = 1) +
+  theme_bw() +
+  scale_x_continuous(expand = c(0.01, 0.01), breaks = seq(1, 13)) +
+  scale_y_continuous(expand = c(0.01, 0.01), labels = scales::percent) +
+  removeGridX() +
+  theme(text = element_text(size = 14)) +
+  labs(x = "Age (years)", y = "Change in relative abundance")
+```
+
