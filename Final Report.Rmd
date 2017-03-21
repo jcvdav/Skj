@@ -1,5 +1,5 @@
 ---
-title: "An overview of the status of the Skipjack Tuna on the Atlantic Ocean"
+title: "An overview of the status and management of the Skipjack Tuna on the Atlantic Ocean"
 subtitle: "Final Report for ESM 211 - Applied Population Ecology"
 author: "Caio Faro & Juan Carlos Villasenor-Derbez"
 date: "March 20, 2017"
@@ -52,7 +52,65 @@ __Figs and Reg tables__
 
 ### Qualitative description of population structure
 
-Our data is composed by length data, which we transformed into expected age using the transformed Von Bertalanffy function $$ A = \frac {1}{-K} \times log(1-(\frac {L}{L_{inf}}))+t_0 $$, where: A = age, K = growth rate, L = length, $L_{inf}$ = asymptotic length. Therefore, our model use a age structure.
+Therefore, our model use a age structure.
+
+Our data is composed by length data, which we transformed into expected age using the transformed Von Bertalanffy function $$ A = \frac {1}{-K} \times log(1-(\frac {L}{L_{inf}}))+t_0 $$
+
+Where:
+
+  - $A$ = age (years)
+  - $K$ = growth rate
+  - $L$ = length (cm)
+  - $L_{inf}$ = asymptotic length (cm)
+  
+The model can then be made into a function as follows:
+
+```{r}
+# Convert length to age using von bertalanffy model, solving for A
+length2age <- function(length, l_inf, K, t_o){
+  age <- (1/-K)*(log(1-(length/L_inf))) + t_o
+  return(age)
+}
+```
+  
+
+### Length at age
+
+Solving for $L$ in the equation above, we obtain:
+
+$$L = l_{inf}(1-exp^{(-K(A-t_o))})$$
+
+Which can be made into a function as:
+
+```{r}
+# Convert age to length using von bertalanffy model
+age2length <- function(age, l_inf, K, t_o){
+  length <- l_inf*(1-exp(-K*(age-t_o)))
+  return(length)
+}
+```
+
+## Fecundity at length
+
+$$f = 10^{(a+(b*log_{10}(L*10)))}$$
+
+Where:
+
+  - $f$ = fecundity (number of eggs)
+  - $a$ = **NAME HERE**
+  - $b$ = **NAME HERE**
+  - $L$ = length (cm)
+  
+As a function, this takes the form:
+
+```{r}
+#Convert length to fecundity (number of eggs)
+fecundity <- function(length, a, b){
+  f <- 10^(a+(b*log10(length*10)))
+  return(f)
+}
+```
+
 
 ### Description of the demographic information
 
@@ -144,74 +202,47 @@ knitr::kable(A, col.names = paste0("$a_{",ages,"}$"), row.names = F, caption = "
 #### Define demographic parameters
 
 ```{r}
-# Define Von Bert parameters
-# Garbin & Castello, 2014
-# L_inf <- mean(c(80, 80, 87.12, 94, 97.9, 97.3, 112.34, 89.38, 92.5))
-# K <- mean(c(0.32, 0.6, 0.22, 0.38, 0.14, 0.25, 0.14, 0.38, 0.16))
 
 # Or from Us and Stiurskjgfas, 1981
 L_inf <- 102
-K <- 0.55
+K <- 0.55 #(from the review)
 t_0 <- -0.02
 
-# Just to be clear, we use L-inf  and to from Ushisomething, and K from the review
 
-# Define fecundity parameters
-# From fishbase http://www.fishbase.se/Reproduction/FecundityList.php?ID=107&GenusName=Katsuwonus&SpeciesName=pelamis&fc=416&StockCode=121
+# Define fecundity parameters (from fishbase)
 fec_a <- -1.33354
 fec_b <- 3.238
-# Define mortality
 
+# Define mortality
 m <- 0.63
 z <- 1.39
 ```
 
 
-#### Define the functions we will need
-
-```{r}
-# Convert length to age using von bertalanffy model, solving for t
-length2age <- function(length, l_inf, K, t_o){
-  age <- (1/-K)*(log(1-(length/L_inf))) + t_o
-  return(age)
-}
-
-# Convert age to length using von bertalanffy model
-age2length <- function(age, l_inf, K, t_o){
-  length <- l_inf*(1-exp(-K*(age-t_o)))
-  return(length)
-}
-
-#Convert length to fecundity (number of eggs)
-fecundity <- function(length, a, b){
-  f <- 10^(a+(b*log10(length*10)))
-  return(f)
-}
-```
-
 #### Create the matrix
 
 ```{r, results='asis'}
-A <- matrix(0, 14, 14) #initial empty matrix with all 0
+A <- matrix(0, 13, 13) #initial empty matrix with all 0
 
 # Populate matrix with mortality
-for (i in 2:14){
-  A[i,i-1] <- exp(-1-z)
+for (i in 2:13){
+  A[i,i-1] <- exp(-z)
 }
 
 # Populate matrix with fecundity
-ages <- seq(0:13)-1
+ages <- seq(1,13)
 lengths <- age2length(ages, L_inf, K, t_0)
-A[1,] <- fecundity(lengths, fec_a, fec_b)
-
-A[is.na(A)] <- 0
-A[2,1] <- 0.0000001
-A[1,1] <- 0
+A[1,] <- fecundity(lengths, fec_a, fec_b) * 0.5 * 1e-7 #Multiply fecundity times 0.5 (F:M = 1:1) and times 1e-7 (survival of 1 year olds)
 
 colnames(A) <- ages
 rownames(A) <- ages
 
-knitr::kable(A, col.names = paste0("$a_{",ages,"}$"), row.names = F, caption = "Table 2- Population matrix A. The inferior diagonal represents survivals, while the first row represents facundities.")
+knitr::kable(A,
+      digits = 2,
+      col.names = paste0("$a_{",ages,"}$"),
+      row.names = F,
+      caption = "Population matrix A. The inferior diagonal represents survivals, while the first row represents facundities.")
+
 ```
 
 #### Load the data
@@ -249,11 +280,24 @@ n <- n %>% {
   .$N}%>% 
   c(rep(0, times = 8))
 
-n_0 <- sum(A[1, 2:14]*n, na.rm = T)
+data.frame(N = n,
+           Age = ages) %>% 
+  mutate(N = N/sum(N)) %>% 
+  ggplot(aes(x = Age, y = N)) +
+  geom_bar(stat = "identity", fill = "gray", color = "black", size = 1) +
+  geom_text(aes(x = Age, y = N + 0.05, label = formatC(lengths, digits = 0, format = "f"))) +
+  theme_bw() +
+  scale_x_continuous(expand = c(0.01, 0.01), breaks = seq(1, 13)) +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 1), labels = scales::percent) +
+  removeGridX() +
+  theme(text = element_text(size = 14)) +
+  labs(x = "Age (years)", y = "log-transformed abundance")
 
-n <- c(n_0, n)
-
-n
+# n_0 <- sum(A[1, 2:14]*n, na.rm = T)
+# 
+# n <- c(n_0, n)
+# 
+# n
 
 ```
 
@@ -261,21 +305,20 @@ n
 #### Project the population
 
 ```{r}
-project <- popbio::pop.projection(A, n, 15)
-
+project <- popbio::pop.projection(A, n, 20)
 ```
 
-```{r, fig.cap = "Figure 2 - Population size through time, represented by ages."}
-pop <- project$stage.vectors %>% 
+```{r, fig.cap = "Figure 1 - Population size through time, represented by ages."}
+project$stage.vectors %>% 
   as.data.frame() %>% 
-  mutate(Age = as.factor(seq(0:13)-1)) %>% 
+  mutate(Age = as.factor(seq(1,13))) %>% 
   gather(Year, N, -Age) %>% 
   mutate(Year = as.numeric(as.character(Year))) %>% 
-  select(Year, Age, N)
-
-ggplot(pop, aes(x = Year, y = log(N), color = Age)) +
+  select(Year, Age, N) %>% 
+  ggplot(aes(x = Year, y = log(N), color = Age)) +
   geom_line() +
   theme_bw()
+
 ```
 
 
@@ -348,54 +391,7 @@ Environmental variation is another aspect to consider. It is known that recruitm
   
   - von Bertanalnffy growth parameters: $L_{inf} = 102.0$, $K = 0.55$, $t_0 = -0.02$ (Uchiyama & Struhsaker, 1981)
 
-#### Define demographic parameters
-
-```{r}
-# Define Von Bert parameters
-# Garbin & Castello, 2014
-# L_inf <- mean(c(80, 80, 87.12, 94, 97.9, 97.3, 112.34, 89.38, 92.5))
-# K <- mean(c(0.32, 0.6, 0.22, 0.38, 0.14, 0.25, 0.14, 0.38, 0.16))
-
-# Or from Us and Stiurskjgfas, 1981
-L_inf <- 102
-K <- 0.55
-t_0 <- -0.02
-
-# Just to be clear, we use L-inf  and to from Ushisomething, and K from the review
-
-# Define fecundity parameters
-# From fishbase http://www.fishbase.se/Reproduction/FecundityList.php?ID=107&GenusName=Katsuwonus&SpeciesName=pelamis&fc=416&StockCode=121
-fec_a <- -1.33354
-fec_b <- 3.238
-# Define mortality
-m <- 0.63
-z <- 1.39
-
-```
-
 \clearpage
-
-#### Define the functions we will need
-
-```{r}
-# Convert length to age using von bertalanffy model, solving for t
-length2age <- function(length, l_inf, K, t_o){
-  age <- (1/-K)*(log(1-(length/L_inf))) + t_o
-  return(age)
-}
-
-# Convert age to length using von bertalanffy model
-age2length <- function(age, l_inf, K, t_o){
-  length <- l_inf*(1-exp(-K*(age-t_o)))
-  return(length)
-}
-
-#Convert length to fecundity (number of eggs)
-fecundity <- function(length, a, b){
-  f <- 10^(a+(b*log10(length*10)))
-  return(f)
-}
-```
 
 #### Create the matrix
 
@@ -423,23 +419,6 @@ knitr::kable(A, col.names = paste0("$a_{",ages,"}$"), row.names = F,
              caption = "Table I - Population matrix A. The inferior diagonal represents survivals, while the first row represents facundities.")
 ```
 
-#### Build a population vector
-
-```{r}
-
-load("size_dist_1980.RData") #This is the n-vector for 1980, loads it to a vector called n
-
-n <- n %>% {
-  .$N}%>% 
-  c(rep(0, times = 8))
-
-n_0 <- sum(A[1, 2:14]*n, na.rm = T)
-
-n <- c(n_0, n)
-
-n
-
-```
 
 #### Project the population
 
@@ -477,15 +456,31 @@ This time we projected the population for 30 years in the future with a manageme
 
 A_min <- A
 
-A_min[3,2] <- exp(-m)
+A_min[2, 1] <- exp(-m)
 
-knitr::kable(A_min, col.names = paste0("$a_{",ages,"}$"), row.names = F, caption = "Table I - Population matrix A, modifying mortality of age 1 organisms. The inferior diagonal represents survivals, while the first row represents facundities.")
+knitr::kable(A_min,
+      digits = 2,
+      col.names = paste0("$a_{",ages,"}$"),
+      row.names = F,
+      caption = "Population matrix $\\hat{A}$, modifying mortality of age 1 organisms through a minimum catch size set at 67 cm. The inferior diagonal represents survivals, while the first row represents facundities.")
   
 ```
 
 ```{r}
-project_min <- popbio::pop.projection(A_min, n, 30)
+project_min <- popbio::pop.projection(A_min, n, 20)
 
+```
+
+```{r, fig.cap = "Population size through time, represented by ages."}
+project_min$stage.vectors %>% 
+  as.data.frame() %>% 
+  mutate(Age = as.factor(seq(1, 13))) %>% 
+  gather(Year, N, -Age) %>% 
+  mutate(Year = as.numeric(as.character(Year))) %>% 
+  select(Year, Age, N) %>% 
+  ggplot(aes(x = Year, y = log(N), color = Age)) +
+  geom_line() +
+  theme_bw()
 ```
 
 ```{r, fig.cap = "Figure 2 - Population size through time, represented by ages."}
@@ -504,11 +499,11 @@ ggplot(pop, aes(x = Year, y = log(N), color = Age)) +
   geom_vline(xintercept = 18, color = "red", linetype = "dashed", size = 1)
 ```
 
-```{r, fig.cap= "Figure 3 - Total population size through time."}
+```{r, fig.cap= "Total population size through time."}
 
 tot1 <- project$pop.sizes
 tot2 <- project_min$pop.sizes
-time <- seq(1:30)
+time <- seq(1:20)
 
 data.frame(time, BAU = tot1, Int = tot2) %>% 
   gather(scenario, popsize, -time) %>% 
@@ -520,7 +515,34 @@ data.frame(time, BAU = tot1, Int = tot2) %>%
 
 ```
 
+```{r, fig.cap = "Stable stage population structure, represented by ages (x-axis) and relative abundances (y-axis). Numbers above bars indicate the corresponding size (TL cm) for each age."}
+data.frame(Age = ages, BAU = project$stable.stage, Int = project_min$stable.stage) %>% 
+  gather(scenario, N, -Age) %>% 
+  ggplot(aes(x = Age, y = N)) +
+  geom_bar(stat = "identity", fill = "gray", color = "black", size = 1) +
+  facet_grid(~scenario, scales = "free_y") +
+  geom_text(aes(x = Age, y = N + 0.05, label = formatC(age2length(Age,  L_inf, K, t_0), digits = 0, format = "f")), size = 3) +
+  theme_bw() +
+  scale_x_continuous(expand = c(0.01, 0.01), breaks = seq(1, 13)) +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 1), labels = scales::percent) +
+  removeGridX() +
+  theme(text = element_text(size = 14)) +
+  labs(x = "Age (years)", y = "Relative abundance")
+  
+```
 
+```{r}
+data.frame(Age = ages, BAU = project$stable.stage, Int = project_min$stable.stage) %>% 
+  mutate(Diff = Int - BAU) %>% 
+  ggplot(aes(x = Age, y = Diff)) +
+  geom_bar(stat = "identity", fill = "gray", color = "black", size = 1) +
+  theme_bw() +
+  scale_x_continuous(expand = c(0.01, 0.01), breaks = seq(1, 13)) +
+  scale_y_continuous(expand = c(0.01, 0.01), labels = scales::percent) +
+  removeGridX() +
+  theme(text = element_text(size = 14)) +
+  labs(x = "Age (years)", y = "Change in relative abundance")
+```
 
 ## A description of the impacts of the modeled management actions or environmental scenarios
 
