@@ -12,6 +12,7 @@ suppressPackageStartupMessages({
   library(tidyverse)
   library(reshape)
   library(popbio)
+  library(ggExtra)
 })
 ```
 
@@ -52,9 +53,9 @@ __Figs and Reg tables__
 
 ### Qualitative description of population structure
 
-Therefore, our model use a age structure.
+For our analyses, we use a age structure model.
 
-Our data is composed by length data, which we transformed into expected age using the transformed Von Bertalanffy function $$ A = \frac {1}{-K} \times log(1-(\frac {L}{L_{inf}}))+t_0 $$
+As previosly mentioned, our data is composed by length data, which we transformed into expected age using the transformed Von Bertalanffy function $$ A = \frac {1}{-K} \times log(1-(\frac {L}{L_{inf}}))+t_0 $$
 
 Where:
 
@@ -114,6 +115,8 @@ fecundity <- function(length, a, b){
 
 ### Description of the demographic information
 
+For this report, we used data from the literature:
+
   - Mortality: $Z = 1.69$ (Garbin & Castello, 2014)
   
   - Fecundity: $a = -1.33354$, $b = 3.238$ (from [FISHBASE](www.fishbase.org))
@@ -171,11 +174,11 @@ a13 -> egg[label = f13]
 ```
 
 
-### Will your model have a pre-breeding census or post-breeding census?
+~~### Will your model have a pre-breeding census or post-breeding census?~~
 
-The model we have defined axplicitly models eggs as a cohort (age = 0). We will conssider deleting this in the future, and explicitly calculate recruits.
+~~The model we have defined explicitly models eggs as a cohort (age = 0). We will conssider deleting this in the future, and explicitly calculate recruits.~~
 
-### The matrix written out symbolically
+### The matrix written out symbolically __(MAYBE WE DON'T NEED THAT)__
 
 ```{r}
 #Build a matrix with text
@@ -203,11 +206,10 @@ knitr::kable(A, col.names = paste0("$a_{",ages,"}$"), row.names = F, caption = "
 
 ```{r}
 
-# Or from Us and Stiurskjgfas, 1981
+# Or from Uchiyama & Struhsaker, 1981
 L_inf <- 102
 K <- 0.55 #(from the review)
 t_0 <- -0.02
-
 
 # Define fecundity parameters (from fishbase)
 fec_a <- -1.33354
@@ -270,7 +272,7 @@ size %>%
 ```
 
 
-#### Build a population vector
+#### Build a population vector __(AFTER THE PART YOU SENT, I COMMENTED FEW LINES THAT I DON'T KNOW IF SHOULD STILL BE THERE... ALSO, I TRIED WITHOUT COMMENTING BUT THERE IS AN ERROR)__
 
 ```{r}
 
@@ -335,9 +337,9 @@ plot(project$pop.changes, type = "b", xlab = "Iterations", ylab = "Lambda")
 ```
 
 
-#### Stabe age structure
+#### Stabe age structure __(NOT FINDING THE OBJECT POP -- THAT'S WHY I USED EVAL=FALSE)__
 
-```{r, fig.cap = "Figure 4 - Stabe age structure, reached after 15 iterations in the model."}
+```{r, eval=FALSE, fig.cap = "Figure 4 - Stabe age structure, reached after 15 iterations in the model."}
 
 pop %>%
   filter(Year == 14) %>% 
@@ -420,7 +422,7 @@ knitr::kable(A, col.names = paste0("$a_{",ages,"}$"), row.names = F,
 ```
 
 
-#### Project the population
+#### Project the population __(ERROR IN LINE 430)__
 
 We projected the population, stratified by ages, for 30 years in the future (Figure 1). The population seems to have a positive trend, which shows the population is increasing. Note how one-year olds achieve a population size of log(N) = 40 by year 22 (dashed lines). We will use this reference point when comparing with the management intervention.
 
