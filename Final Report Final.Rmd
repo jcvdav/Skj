@@ -1,0 +1,508 @@
+---
+title: An overview of the status and management of the Skipjack Tuna (*Katsuwonus pelamis*) in the Atlantic Ocean
+author: "Caio Faro & Juan Carlos Villasenor-Derbez"
+date: "March 20, 2017"
+output:
+  pdf_document: 
+    fig_caption: yes
+    fig_height: 3
+    fig_width: 6
+subtitle: Final Report for ESM 211 - Applied Population Ecology
+---
+
+```{r setup}
+suppressPackageStartupMessages({
+  library(readr)
+  library(tidyverse)
+  library(reshape)
+  library(popbio)
+  library(ggExtra)
+  library(knitr)
+  library(RobustRegression)
+  library(stargazer)
+})
+```
+
+```{r, echo = F}
+rse <- function(model) {
+  
+  robust_errors <- coeftest(model, vcov = vcovHC(model, type = 'HC1')) %>%
+    broom::tidy()
+  
+  robust_se <- robust_errors$std.error %>%
+    set_names(robust_errors$term) %>% 
+    list()
+  
+  return(robust_se)
+}
+```
+
+
+## A description of the conservation or management problem
+
+*Katsuwonus pelamis* (Linnaeus, 1758), also known as Skipjack Tuna, is a fish from the Order Perciformes, under the Scombridae family. This family includes all mackerels, tunas, and bonitos. As other species in this family, *K. pelamis* has a pelagic affinity, often found in aggregations between 0 and 260 m deep and is mainly distributed in tropical waters --where they spawn-- but is common to subtropical and temperate waters. Scombrids are also characterized for their fast growth rates and high mobility.
+
+Unlike other Scombrids, *K. pelamis* is relatively small, with a mean length of 80 cm (max up to 110 cm). The maximum reported weight has been 34.5 Kg, and the maximum reported age has been 12 years. It reaches the sexual maturity around one year and 43 cm. It feeds mainly on fish and crustaceans, but squids and some mollusks also comprise part of their diet. Trophic ecology research indicates that they have a trophic level of TL = 4.4 ± 0.5 (M ± SE; Froese & Pauly, 2016).
+
+Besides its populations being classified as Least Concern by CITES, there is a high uncertainty in population estimations, which may mask the real status. FAO reports increased landings in the last years, likely due to an increase in effort. Some regions are already showing the first signs of overfishing for this species. 
+
+
+### Conservation or management problem
+
+The Skipjack is a commercially important fish that sustain a high fishing effort around the world. It is currently the third most captured species of the world on average ([FAO, 2016](http://www.fao.org/3/a-i5555e.pdf)).
+Catches of skipjack tuna have been steadily increasing since 1950, reaching a global peak in 1991 at 1 674 970 t. ([FAO, 2017](http://www.fao.org/fishery/species/2494/en)). In the Atlantic Ocean the catches peaked on 2013 at 255,729.78 t. Guarantee that this fishery is sustainable is extremely important for the economy and food security. 
+
+
+### Data
+
+Our data comprise nominal catches data, effort and size for Skipjack Tuna on the Atlantic Ocean, reported by countries to the International Commision to the Conservation of the Atlantic Tuna (ICCAT). The data was updated on November 2016 and incorporates catches from 1950 to 2015.
+
+#### *Metadata*
+
+The data includes a total of 3,711 records of catch data, specified for 66 years (1950 - 2015). The data also includes information by Fleet (149), country (66 Flags), and Party (39). The effort data correspond to 40,646 records of catch data from 17 countries associated with the effort (fishing hours) for that fishing trip, from 2006 to 2015. The last datased includes a total of 34,074,524 records of size of the Skipjack captured by 17 countries between 1964 and 1980.
+All the datasets also include ICCAT Area code to allow spatial identification. In order to control for different gear types, a column for Gear group is included. Stock source (Eastern and Western Atlantic) is also included.
+
+
+## Evidence for past trends
+
+We explored the relationship between effort and time (Fig. 1) by fitting a linear model where coefficients were estimated by Ordinary Least Squares with heteroskedastic-robust standard errors, and tested the significance of the slope and intercept coefficients. Neither the intercept or slope showed significant change through time (Table 1), indicating that fishing effort had remained relatively constant from 2006 to 2015 (Fig. 1).
+
+
+```{r, fig.cap = "Total effort (fishing hours) by country through time."}
+skj <- read.csv("Effort_full.csv", stringsAsFactors = F) %>% 
+  mutate(CPUE = SKJ/Eff1) %>% 
+  filter(GearCode == "PS") %>% 
+  group_by(Year, Flag) %>% 
+  summarize(Effort = sum(Eff1))
+
+ggplot(skj, aes(x = Year, y = Effort)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  theme_bw() +
+  labs(y = "Effort (fishing hours)")
+```
+
+
+```{r, results = 'asis'}
+
+model <- lm(Effort~Year, skj)
+
+stargazer(model,
+          se = rse(model),
+          t.auto = T,
+          p.auto = T,
+          header = F,
+          single.row = T,
+          title = "Regression coefficients for Fishing effort (hours) as a function of time. Numbers in parenthesis are Standard Errors.")
+
+```
+
+\clearpage
+
+
+We then used a larger dataset that included catches from 1950 to 2015, by country (Fig 2), and calculated the total catches by year (Fig. 3). We counted the unique countries that participated in the fishery or for which there is data (Figure 4), and used this as a proxy of total fishing effort. We then normalized total catches by dividing them by the number of countries participating in the fishery each year (Fig. 5). Here, we can see an increase in catches even after normalizing for our proxy of effort. For the Eastern stock (ATE), we see a steady increase since 1950, resulting in an order of magnitude higher values for 2015, as compared to 1950. On the other hand, the Western stock (WTE) does not show an increase of similar magnitude. Interannual variability in the data is in the order of 5,000 tonnes for ATE, and 1500 for ATW. Tables 2 and 3 present the regression coefficients for CPUE as a function of time, for each stock.
+
+```{r, fig.cap = "Annual catches (tonnes) of Skipjack by country, from two different stocks. Red points represent catches from the East Atlantic Stock (ATE) and blue points from the West Atlantic Stock (ATW)."}
+
+iccat <- read.csv("ICCAT Data_full.csv")
+
+slope <- coefficients(model)[[2]]
+intercept <- coefficients(model)[[1]]
+
+countries <- iccat %>% 
+  group_by(YearC, Stock, Flag) %>% 
+  count() %>% 
+  group_by(YearC, Stock) %>% 
+  count()
+
+iccat2 <- iccat %>% 
+  group_by(YearC, Stock, Flag) %>% 
+  summarize(Catch = sum(Qty_t)) %>% 
+  left_join(countries, by = c("YearC", "Stock")) %>% 
+  mutate(Effort = intercept + (slope * YearC),
+         CPUE = Catch/Effort,
+         CPUE2 = Catch / nn)
+
+ggplot(data = iccat2, aes(x = YearC, y = Catch, color = Stock)) +
+  geom_point() +
+  theme_bw() +
+  labs(x = "Year", y = "Catches (tonnes)") +
+  scale_color_brewer(palette = "Set1") +
+  removeGridX() +
+  theme(text = element_text(size = 14))
+
+```
+
+
+```{r, fig.cap = "Total catches (tonnes) of skipjack per year from the two stocks available on the Atlantic Ocean."}
+iccat2 <- iccat %>% 
+  group_by(YearC, Stock) %>% 
+  summarize(Catch = sum(Qty_t)) %>% 
+  left_join(countries, by = c("YearC", "Stock")) %>% 
+  mutate(Effort = intercept + (slope * YearC),
+         CPUE = Catch/Effort,
+         CPUE2 = Catch / nn)
+
+ggplot(data = iccat2, aes(x = YearC, y = Catch, color = Stock)) +
+  geom_point() +
+  theme_bw() +
+  labs(x = "Year", y = "Catches (tonnes)") +
+  scale_color_brewer(palette = "Set1")
+```
+
+
+```{r, fig.cap = "Number of countries involved on the harvest of the Skipjack on the East (ATE - red points) and West (ATW - blue points) Atlantic Ocean Stocks."}
+ggplot(countries, aes(x = YearC, y = nn, color = Stock)) +
+  geom_point() +
+  theme_bw() +
+  labs(x = "Year", y = "Number of countries \n in the fishery") +
+  scale_color_brewer(palette = "Set1")
+```
+
+```{r, fig.cap = "Annual mean catch (tonnes/country) of skipjack captured on from two stocks on the Atlantic Ocean. Red and blue points represent catches from the East Atlantic Stock and West Atlantic Stock, respectively. Colored lines represent the trend for mean catches per country from each stock."}
+ggplot(data = iccat2, aes(x = YearC, y = CPUE2, color = Stock)) +
+  geom_point() +
+  theme_bw() +
+  geom_smooth(method = "lm") +
+  labs(x = "Year", y = "Catch per unit effort\n (tonnes / fishing countries)") +
+  scale_color_brewer(palette = "Set1")
+```
+
+```{r, results = 'asis'}
+mod2 <- filter(iccat2, Stock == "ATW") %>% 
+  lm(formula = CPUE ~ YearC)
+
+stargazer(mod2,
+          se = rse(mod2),
+          t.auto = T,
+          p.auto = T,
+          header = F,
+          single.row = T,
+          title = "Regression coefficients for Catch per unit effort (ATW) as a function of time. Numbers in parenthesis are Standard Errors.")
+
+```
+
+```{r, results = 'asis'}
+mod2 <- filter(iccat2, Stock == "ATE") %>% 
+  lm(formula = CPUE ~ YearC)
+
+stargazer(mod2,
+          se = rse(mod2),
+          t.auto = T,
+          p.auto = T,
+          header = F,
+          single.row = T,
+          title = "Regression coefficients for Catch per unit effort (ATE) as a function of time. Numbers in parenthesis are Standard Errors.")
+```
+
+\clearpage
+
+## Description of the model(s) used to project the population, and the sources of information about the model parameters
+
+### Qualitative description of population structure
+
+For our analyses, we use a age structured model.
+
+As previosly mentioned, our data is composed by length data, which we transformed into expected age using the transformed Von Bertalanffy function $$ A = \frac {1}{-K} \times log(1-(\frac {L}{L_{inf}}))+t_0 $$
+
+Where:
+
+  - $A$ = age (years)
+  - $K$ = growth rate
+  - $L$ = length (cm)
+  - $L_{inf}$ = asymptotic length (cm)
+  
+The model can then be made into a function as follows:
+
+```{r}
+# Convert length to age using von bertalanffy model, solving for A
+length2age <- function(length, l_inf, K, t_o){
+  age <- (1/-K)*(log(1-(length/L_inf))) + t_o
+  return(age)
+}
+```
+  
+
+### Length at age
+
+Solving for $L$ in the equation above, we obtain:
+
+$$L = l_{inf}(1-exp^{(-K(A-t_o))})$$
+
+Which can be made into a function as:
+
+```{r}
+# Convert age to length using von bertalanffy model
+age2length <- function(age, l_inf, K, t_o){
+  length <- l_inf*(1-exp(-K*(age-t_o)))
+  return(length)
+}
+```
+
+### Fecundity at length
+
+$$f = 10^{(a+(b*log_{10}(L*10)))}$$
+
+Where:
+
+  - $f$ = fecundity (number of eggs)
+  - $a$ = constant
+  - $b$ = constant
+  - $L$ = length (cm)
+  
+As a function, this takes the form:
+
+```{r}
+#Convert length to fecundity (number of eggs)
+fecundity <- function(length, a, b){
+  f <- 10^(a+(b*log10(length*10)))
+  return(f)
+}
+```
+
+
+### Description of the demographic information
+
+For this report, we used data from the literature:
+
+  - Mortality: $Z = 1.69$ (Garbin & Castello, 2014)
+  
+  - Fecundity: $a = -1.33354$, $b = 3.238$ (from [FISHBASE](www.fishbase.org))
+  
+  - von Bertanalnffy growth parameters: $L_{inf} = 102.0$, $K = 0.55$, $t_0 = -0.02$ (Uchiyama & Struhsaker, 1981)
+
+
+### A life-cycle diagram for your species
+
+![Life-cycle diagram for Skipjack tuna (_Katsuwonus pelamis_). S indicates survival, and f indicates fecundity.](diagram.png)
+
+\clearpage
+
+## Projections of the model, including a baseline scenario and one management scenarios
+  
+### Define demographic parameters
+
+```{r}
+# Or from Uchiyama & Struhsaker, 1981
+L_inf <- 102
+K <- 0.55
+t_0 <- -0.02
+
+# Fecundity parameters
+fec_a <- -1.33354
+fec_b <- 3.238
+
+# Mortality
+m <- 0.63
+z <- 1.69
+
+```
+
+### Create the matrix
+
+```{r, results='asis'}
+A <- matrix(0, 13, 13) #initial empty matrix with all 0
+
+# Populate matrix with mortality
+for (i in 2:13){
+  A[i,i-1] <- exp(-z)
+}
+
+# Populate matrix with fecundity
+ages <- seq(1,13)
+lengths <- age2length(ages, L_inf, K, t_0)
+A[1,] <- fecundity(lengths, fec_a, fec_b) * 0.5 * 1e-7 #Multiply fecundity times 0.5 (F:M = 1:1) and times 1e-7 (survival of 1 year olds)
+
+colnames(A) <- ages
+rownames(A) <- ages
+
+kable(A,
+      digits = 2,
+      col.names = paste0("$a_{",ages,"}$"),
+      row.names = F,
+      caption = "Population matrix A. The inferior diagonal represents survivals, while the first row represents facundities.")
+
+```
+
+### Build the population vector
+
+```{r, warning = F, fig.cap="Initial population population structure, represented by ages (x-axis) and relative abundances (y-axis). Numbers above bars indicate the corresponding size (TL cm) for each age."}
+
+load("size_dist_1980.RData") #This is the n-vector for 1980, loads it to a vector called n
+
+n <- n %>% {
+  .$N*0.5}%>% 
+  c(rep(0, times = 8))
+
+data.frame(N = n,
+           Age = ages) %>% 
+  mutate(N = N/sum(N)) %>% 
+  ggplot(aes(x = Age, y = N)) +
+  geom_bar(stat = "identity", fill = "gray", color = "black", size = 1) +
+  geom_text(aes(x = Age, y = N + 0.05, label = formatC(lengths, digits = 0, format = "f"))) +
+  theme_bw() +
+  scale_x_continuous(expand = c(0.01, 0.01), breaks = seq(1, 13)) +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 1), labels = scales::percent) +
+  removeGridX() +
+  theme(text = element_text(size = 14)) +
+  labs(x = "Age (years)", y = "log-transformed abundance")
+
+```
+
+### Asymptotic analysis of the matrix
+
+We projected the population, stratified by ages, for 20 years in the future. The population seems to have a positive trend, which shows the population is increasing.
+
+```{r}
+project <- popbio::pop.projection(A, n, 20)
+```
+
+```{r, fig.cap = "Population size through time, represented by ages."}
+
+project$stage.vectors %>% 
+     as.data.frame() %>% 
+     mutate(Age = as.factor(seq(1,13))) %>% 
+     gather(Year, N, -Age) %>% 
+     mutate(Year = as.numeric(as.character(Year))) %>% 
+     select(Year, Age, N) %>% 
+     ggplot(aes(x = Year, y = log(N), color = Age)) +
+     geom_line() +
+     theme_bw()
+
+```
+
+### Lambda
+
+$\lambda =$ `r project$lambda`
+
+```{r, fig.cap = "Figure 3 - Convergence of $\\lambda$ through time."}
+
+plot(project$pop.changes, type = "b", xlab = "Iterations", ylab = "Lambda")
+
+```
+
+### Sensitivity
+
+```{r, fig.cap = "Figure 5 - Sensitivity matrix."}
+
+sensitivity(A) %>% 
+  image2(box.offset=.1)
+
+```
+
+
+### Elasticity
+
+```{r, fig.cap = "Figure 6 - Elasticity matrix."}
+elasticity(A) %>% 
+  image2(box.offset = 0.1)
+```
+
+
+### Interpretation of results
+
+The $\lambda = 1.47$ shows that the population is projected to grow at rate of 47%. The result of the sensitivity analysis suggest that is most effective to intervene on the early ages. Since the species mature early (between ages 1 and 2), there is no necessity of conserving the old/big individuals that have higher fecundity, because the younger ones (in quantity) can provide enough eggs to maintain the population.
+
+
+### Discussion
+
+The model assumes the mortality is constant through ages. Better estimates of mortality/survival for different ages would show the real population structure.
+
+The model assumes that the population is density-independent. However, we believe that fecundity, recruitment and survival of this pelagic species is density dependent. Perhaps a first approach wil be to use a Beverton-Holt approach to calculate recruitment, although this assumes density dependence in all the model.
+
+Currently, organisms of all sizes are harvested in the model (excluding eggs). An interesting approach would be to set a size limit that reduces total effort on small sizes to natural effort by excluding fishing effort. This could allow us to evaluate the effect of a minimum catch size, management intervention aligned with the observed elasticities.
+
+Environmental variation is another aspect to consider. It is known that recruitment of fish can be affected by extreme environmental conditions, like El Nino. Further analysis could incorporate the effects of climate variability on recruitment.
+
+
+#### Management intervention: Minimum catch size
+
+This time we projected the population for 30 years in the future with a management intervention on the minimum size of capture (Figure 12) set at 67 cm (upper limit of age = 1) based on the sensitivity analysis. Our projection assumes total compliance on the intervention, which means the fishing pressure is equal to 0. Therefore, the total mortality (Z) is equal to the natural mortality (M) for individuals of age 1. By protecting individuals of age 1 (the age at which they reach maturity), we observe a faster recovery in the fishery. This can be observed by comparing the log(N) = 40 at year 22, which is now reached at year 18 for one-year olds. Additionally, in the context of the entire stock, Figure 13 shows that with the management intervention total skipjack population recovers faster.
+
+
+```{r}
+
+A_min <- A
+
+A_min[2, 1] <- exp(-m)
+
+knitr::kable(A_min,
+      digits = 2,
+      col.names = paste0("$a_{",ages,"}$"),
+      row.names = F,
+      caption = "Population matrix $\\hat{A}$, modifying mortality of age 1 organisms through a minimum catch size set at 67 cm. The inferior diagonal represents survivals, while the first row represents facundities.")
+  
+```
+
+```{r}
+project_min <- popbio::pop.projection(A_min, n, 20)
+```
+
+```{r, fig.cap = "Population size through time, represented by ages."}
+project_min$stage.vectors %>% 
+  as.data.frame() %>% 
+  mutate(Age = as.factor(seq(1, 13))) %>% 
+  gather(Year, N, -Age) %>% 
+  mutate(Year = as.numeric(as.character(Year))) %>% 
+  select(Year, Age, N) %>% 
+  ggplot(aes(x = Year, y = log(N), color = Age)) +
+  geom_line() +
+  theme_bw()
+```
+
+```{r, fig.cap= "Total population size through time."}
+
+tot1 <- project$pop.sizes
+tot2 <- project_min$pop.sizes
+time <- seq(1:20)
+
+data.frame(time, BAU = tot1, Int = tot2) %>% 
+  gather(scenario, popsize, -time) %>% 
+  ggplot(aes(x = time, y = log(popsize), color = scenario)) +
+  geom_point(size = 2) +
+  geom_line(size = 1) +
+  theme_bw() +
+  scale_color_brewer(palette = "Set1")
+
+```
+
+```{r, fig.cap = "Stable stage population structure, represented by ages (x-axis) and relative abundances (y-axis). Numbers above bars indicate the corresponding size (TL cm) for each age."}
+data.frame(Age = ages, BAU = project$stable.stage, Int = project_min$stable.stage) %>% 
+  gather(scenario, N, -Age) %>% 
+  ggplot(aes(x = Age, y = N)) +
+  geom_bar(stat = "identity", fill = "gray", color = "black", size = 1) +
+  facet_grid(~scenario, scales = "free_y") +
+  geom_text(aes(x = Age, y = N + 0.05, label = formatC(age2length(Age,  L_inf, K, t_0), digits = 0, format = "f")), size = 3) +
+  theme_bw() +
+  scale_x_continuous(expand = c(0.01, 0.01), breaks = seq(1, 13)) +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 1), labels = scales::percent) +
+  removeGridX() +
+  theme(text = element_text(size = 14)) +
+  labs(x = "Age (years)", y = "Relative abundance")
+  
+```
+
+
+```{r}
+data.frame(Age = ages, BAU = project$stable.stage, Int = project_min$stable.stage) %>% 
+  mutate(Diff = Int - BAU) %>% 
+  ggplot(aes(x = Age, y = Diff)) +
+  geom_bar(stat = "identity", fill = "gray", color = "black", size = 1) +
+  theme_bw() +
+  scale_x_continuous(expand = c(0.01, 0.01), breaks = seq(1, 13)) +
+  scale_y_continuous(expand = c(0.01, 0.01), labels = scales::percent) +
+  removeGridX() +
+  theme(text = element_text(size = 14)) +
+  labs(x = "Age (years)", y = "Change in relative abundance")
+```
+
+\clearpage
+
+## References
+- http://www.iucnredlist.org/details/170310/0
+- https://www.iccat.int/Documents/SCRS/ExecSum/SKJ_ENG.pdf
+- Froese, R. and D. Pauly. Editors. 2016.FishBase. World Wide Web electronic publication. www.fishbase.org, (10/2016)
+- Garbin, T. and Castello, J.P. 2014. Changes in population structure and growth of skipjack tuna, Katsuwonus pelamis during 30 years of exploitation in the southwestern Atlantic. Lat Am J Aquat Res, 42(3), 535-546
+- Uchiyama, J.H and Struhsaker, P. 1981. Age and growth of Skipjack Tuna, Katsuwonus pelamis, and Yellowfin Tuna, Thunnus albacares, as indicatedby daily growth increments of sagittae. Fishery Bulletin, Vol 79(1).
+
+
