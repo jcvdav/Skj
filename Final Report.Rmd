@@ -21,31 +21,31 @@ suppressPackageStartupMessages({
 
 *Katsuwonus pelamis* (Linnaeus, 1758), also known as Skipjack Tuna, is a fish from the Order Perciformes, under the Scombridae family. This family includes all mackerels, tunas, and bonitos. As other species in this family, *K. pelamis* has a pelagic affinity, often found in aggregations between 0 and 260 m deep and is mainly distributed in tropical waters --where they spawn-- but is common to subtropical and temperate waters. Scombrids are also characterized for their fast growth rates and high mobility.
 
-Unlike other Scombrids, *K. pelamis* is relatively small, with a mean length of 80 cm __(max up to 110 cm)__. The maximum reported weight has been 34.5 Kg, and the maximum reported age has been 12 years. It reaches the sexual maturity around one year and 43 cm.
+Unlike other Scombrids, *K. pelamis* is relatively small, with a mean length of 80 cm (max up to 110 cm). The maximum reported weight has been 34.5 Kg, and the maximum reported age has been 12 years. It reaches the sexual maturity around one year and 43 cm. It feeds mainly on fish and crustaceans, but squids and some mollusks also comprise part of their diet. Trophic ecology research indicates that they have a trophic level of TL = 4.4 ± 0.5 (M ± SE; Froese & Pauly, 2016).
 
-It feeds mainly on fish and crustaceans, but squids and some mollusks also comprise part of their diet. Trophic ecology research indicates that they have a trophic level of TL = 4.4 ± 0.5 (M ± SE; Froese & Pauly, 2016). ~~This species is commercially important and sustain a high fishing effort around the world.~~
+Besides its populations being classified as Least Concern by CITES, there is a high uncertainty is population estimations (which may mask the real status). FAO reports increased landing in the last years, likely due to an increase in effort, and some regions are already showing the first signs of overfishing for this species. 
 
-Besides its populations being classified as Least Concern by CITES, there is a high uncertainty is population estimations (which may mask the real status) and some regions are already showing the first signs of overfishing for this species.
-
-### Status
-The species has been identified as Least Concern by CITES. FAO reports increased landing in the last years, likely due to an increase in effort.
 
 ### Conservation or management problem
+The Skipjack is a commercially important fish that sustain a high fishing effort around the world. It is currently the third most captured species of the world on average (FAO, 2016, http://www.fao.org/3/a-i5555e.pdf).
 Catches of skipjack tuna have been steadily increasing since 1950, reaching a global peak in 1991 at 1 674 970 t. (FAO, 2017, http://www.fao.org/fishery/species/2494/en ). On the Atlantic Ocean the catches peaked on 2013 at 255,729.78 t.
+Guarantee that this fishery is sustainable is extremely important for the economy and food security. 
+
 
 ### Data
-Nominal catches data for Skipjack Tuna on the Atlantic Ocean, reported by countries to the International Commision to the Conservation of the Atlantic Tuna (ICCAT). The data was updated on November 2016 and incorporates catches from 1950 to 2015.
-
+Our data comprise nominal catches data, effort and size for Skipjack Tuna on the Atlantic Ocean, reported by countries to the International Commision to the Conservation of the Atlantic Tuna (ICCAT). The data was updated on November 2016 and incorporates catches from 1950 to 2015.
 
 #### *Metadata*
-The data includes a total of 3,711 records of catch data, specified for 66 years (1950 - 2015). The data also includes information by Fleet (149), country (66 Flags), and Party (39). ICCAT Area code is included to allow spatial identification. In order to control for different gear types, a column for Gear group is included. Stock source (Eastern and Western Atlantic) is also included.
+The data includes a total of 3,711 records of catch data, specified for 66 years (1950 - 2015). The data also includes information by Fleet (149), country (66 Flags), and Party (39). The effort data correspond to 40,646 records of catch data from 17 countries associated with the effort (fishing hours) for that fishing trip, from 2006 to 2015. The last datased includes a total of 34,074,524 records of size of the Skipjack captured by 17 countries between 1964 and 1980.
+All the datasets also include ICCAT Area code to allow spatial identification. In order to control for different gear types, a column for Gear group is included. Stock source (Eastern and Western Atlantic) is also included.
+
 
 ## Evidence for past trends
-After comments on the first assignment, we looked for data on effort for Skipjack fisheries on the Atlantic Ocean. We found data from ICCAT on the number of fishing hours associated with catch from years 2006 to 2015. We then explored the relationship between effort (fishing hours) and time (Fig. 1), by fitting a linear model where coefficients were estimated by Ordinary Least Squares with heteroskedastic-robust standard errors, and tested the significance of the slope and intercept coefficients. Neither the intercept or slope showed significant change through time (Table 1), indicating that fishing effort had remained relatively constant from 2006 to 2015 (Fig 1).
+We explored the relationship between effort and time __(Fig?)__ by fitting a linear model where coefficients were estimated by Ordinary Least Squares with heteroskedastic-robust standard errors, and tested the significance of the slope and intercept coefficients. Neither the intercept or slope showed significant change through time __(Table?)__, indicating that fishing effort had remained relatively constant from 2006 to 2015 __(Fig?)__.
 
 __Fig and Reg Table__ **Looking for it**
 
-We then used a larger dataset that included catches from 1950 to 2015, by country (Fig 2), and calculated the total catches by year (Fig. 3). We counted the unique countries that participated in the fishery or for which there is data (Figure 4), and used this as a proxy of total fishing effort. We then normalized total catches by dividing them by the number of countries participating in the fishery each year (Fig. 5). Here, we can see an increase in catches even after normalizing for our proxy of effort. For the Eastern stock (ATE), we see a steady increase since 1950, resulting in an order of magnitude higher values for 2015, as compared to 1950. On the other hand, the Western stock (WTE) does not show an increase of similar magnitude. Interannual variability in the data is in the order of 5,000 tonnes for ATE, and 1500 for ATW. Tables 2 and 3 present the regression coefficients for CPUE as a function of time, for each stock.
+We then used a larger dataset that included catches from 1950 to 2015, by country __(Fig?)__, and calculated the total catches by year __(Fig?)__. We counted the unique countries that participated in the fishery or for which there is data __(Fig?)__, and used this as a proxy of total fishing effort. We then normalized total catches by dividing them by the number of countries participating in the fishery each year __(Fig?)__. Here, we can see an increase in catches even after normalizing for our proxy of effort. For the Eastern stock (ATE), we see a steady increase since 1950, resulting in an order of magnitude higher values for 2015, as compared to 1950. On the other hand, the Western stock (WTE) does not show an increase of similar magnitude. Interannual variability in the data is in the order of 5,000 tonnes for ATE, and 1500 for ATW. __Tables ? and ?__ present the regression coefficients for CPUE as a function of time, for each stock.
 
 __Figs and Reg tables__ **Looking for it**
 
@@ -54,8 +54,7 @@ __Figs and Reg tables__ **Looking for it**
 
 ### Qualitative description of population structure
 
-
-For our analyses, we use a age structure model.
+For our analyses, we use a age structured model.
 
 As previosly mentioned, our data is composed by length data, which we transformed into expected age using the transformed Von Bertalanffy function $$ A = \frac {1}{-K} \times log(1-(\frac {L}{L_{inf}}))+t_0 $$
 
@@ -279,7 +278,6 @@ plot(project$pop.changes, type = "b", xlab = "Iterations", ylab = "Lambda")
 ```
 
 #### Sensitivity
-
 
 ```{r, fig.cap = "Figure 5 - Sensitivity matrix."}
 
